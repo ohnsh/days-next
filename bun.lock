@@ -8,6 +8,7 @@
         "@astrojs/cloudflare": "14.4.1",
         "@js-temporal/polyfill": "0.5.1",
         "@libsql/client": "0.18.0",
+        "@srcery-colors/srcery-palette": "^2.0.0",
         "astro": "7.4.1",
         "jose": "6.2.12",
         "vod-player-astro": "file:../vod/vod-player-astro",
@@ -347,6 +348,8 @@
     "@sindresorhus/is": ["@sindresorhus/is@7.2.0", "", {}, "sha512-P1Cz1dWaFfR4IR+U13mqqiGsLFf1KbayybWwdd2vfctdV6hDpUkgCY0nKOLLTMSoRd/jJNjtbqzf13K8DCCXQw=="],
 
     "@speed-highlight/core": ["@speed-highlight/core@1.2.24", "", {}, "sha512-qeW2e1l78afw8VhRPfPQ1Gjj+KU5XFQ/OFV5ti6eTa9bruO7mJyZtA4vw0ofqmA3tKCkROE9xLk3VZoeRc98nw=="],
+
+    "@srcery-colors/srcery-palette": ["@srcery-colors/srcery-palette@2.0.0", "", {}, "sha512-zHA3+qSa9gwkaulNNCKE49dqQnxfDIHoHG3Ij3prRtVkQZqIjoGWxKZdjEIPuiy6yyTXoSRv5iq9UxqhrEwQlw=="],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.4", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A=="],
 

@@ -17,10 +17,11 @@
     "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
-    "astro": "7.4.1",
     "@astrojs/cloudflare": "14.4.1",
     "@js-temporal/polyfill": "0.5.1",
     "@libsql/client": "0.18.0",
+    "@srcery-colors/srcery-palette": "^2.0.0",
+    "astro": "7.4.1",
     "jose": "6.2.12",
     "vod-player-astro": "file:../vod/vod-player-astro"
   },
