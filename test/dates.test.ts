@@ -5,7 +5,8 @@ import { coveredMilliseconds } from '../src/server/vod'
 
 describe('Chicago days', () => {
   test('DST days have real local-midnight boundaries', () => {
-    const spring = dayBounds('2026-03-08'), fall = dayBounds('2026-11-01')
+    const spring = dayBounds('2026-03-08'),
+      fall = dayBounds('2026-11-01')
     expect(spring.end - spring.start).toBe(23 * 3600000)
     expect(fall.end - fall.start).toBe(25 * 3600000)
     expect(new Date(spring.start).toISOString()).toBe('2026-03-08T06:00:00.000Z')
@@ -25,12 +26,32 @@ describe('Chicago days', () => {
     expect(youtubeDay('February 30, 2026', '2026-03-02T18:00:00Z')).toBe('2026-03-02')
   })
   test('coverage clips cross-midnight footage and merges overlaps', () => {
-    expect(coveredMilliseconds([{ start: 0, end: 15 }, { start: 10, end: 25 }, { start: 30, end: 100 }], 5, 40)).toBe(30)
+    expect(
+      coveredMilliseconds(
+        [
+          { start: 0, end: 15 },
+          { start: 10, end: 25 },
+          { start: 30, end: 100 },
+        ],
+        5,
+        40
+      )
+    ).toBe(30)
     expect(coveredMilliseconds([{ start: 0, end: 5 }], 5, 40)).toBe(0)
   })
   test('private repositories are excluded before import', () => {
-    expect(githubItem({ name: 'secret', full_name: 'me/secret', private: true, commits_url: '' }, {
-      sha: 'a', html_url: '', commit: { message: 'secret', author: { name: 'John Sherrell', email: 'me@ohn.sh', date: '2026-10-20T12:00:00Z' } },
-    })).toBeNull()
+    expect(
+      githubItem(
+        { name: 'secret', full_name: 'me/secret', private: true, commits_url: '' },
+        {
+          sha: 'a',
+          html_url: '',
+          commit: {
+            message: 'secret',
+            author: { name: 'John Sherrell', email: 'me@ohn.sh', date: '2026-10-20T12:00:00Z' },
+          },
+        }
+      )
+    ).toBeNull()
   })
 })

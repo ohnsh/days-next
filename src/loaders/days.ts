@@ -11,7 +11,13 @@ export function daysLoader(): LiveLoader<Day, { id: string }, { before?: string;
     },
     async loadCollection({ filter }) {
       const days = await getDays(filter?.before, filter?.limit)
-      return { entries: days.map(data => ({ id: data.day, data, cacheHint: { tags: [`day:${data.day}`] } })) }
+      return {
+        entries: days.map((data) => ({
+          id: data.day,
+          data,
+          cacheHint: { tags: [`day:${data.day}`] },
+        })),
+      }
     },
   }
 }

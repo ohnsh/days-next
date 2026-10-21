@@ -1,32 +1,52 @@
 ---
 import type { SourceItem } from '../lib/types'
-interface Props { item: SourceItem }
+interface Props {
+  item: SourceItem
+}
 const { item } = Astro.props
 const videoId = item.id.replace(/^youtube:/, '')
 ---
+
 <article class="youtube-card">
   <days-youtube data-video={videoId} data-title={item.title}>
     <button type="button" aria-label={`Load YouTube video: ${item.title}`}>
-      {item.thumbnail && <img src={item.thumbnail} alt="" loading="lazy" width="480" height="270" />}
-      <span class="play-icon" aria-hidden="true">▶</span>
+      {item.thumbnail && (
+        <img src={item.thumbnail} alt="" loading="lazy" width="480" height="270" />
+      )}
+      <span class="play-icon" aria-hidden="true">
+        ▶
+      </span>
     </button>
   </days-youtube>
-  <h4><a href={item.url}>{item.title}</a></h4>
-  <p class="muted">{item.isShort ? 'Short' : 'Video'} {item.tags.length > 0 && `· ${item.tags.join(' ')}`}</p>
-  {item.description && <details><summary>Description</summary><p class="prewrap">{item.description}</p></details>}
+  <h4>
+    <a href={item.url}>{item.title}</a>
+  </h4>
+  <p class="muted">
+    {item.isShort ? 'Short' : 'Video'} {item.tags.length > 0 && `· ${item.tags.join(' ')}`}
+  </p>
+  {item.description && (
+    <details>
+      <summary>Description</summary>
+      <p class="prewrap">{item.description}</p>
+    </details>
+  )}
 </article>
 <script>
   class DaysYouTube extends HTMLElement {
     connectedCallback() {
-      this.querySelector('button')?.addEventListener('click', () => {
-        const iframe = document.createElement('iframe')
-        iframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(this.dataset.video!)}?autoplay=1`
-        iframe.title = this.dataset.title || 'YouTube video'
-        iframe.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture'
-        iframe.allowFullscreen = true
-        this.replaceChildren(iframe)
-        iframe.focus()
-      }, { once: true })
+      this.querySelector('button')?.addEventListener(
+        'click',
+        () => {
+          const iframe = document.createElement('iframe')
+          iframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(this.dataset.video!)}?autoplay=1`
+          iframe.title = this.dataset.title || 'YouTube video'
+          iframe.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture'
+          iframe.allowFullscreen = true
+          this.replaceChildren(iframe)
+          iframe.focus()
+        },
+        { once: true }
+      )
     }
   }
   if (!customElements.get('days-youtube')) customElements.define('days-youtube', DaysYouTube)

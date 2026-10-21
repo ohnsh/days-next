@@ -4,15 +4,53 @@ import Layout from '../layouts/Layout.astro'
 import DayContent from '../components/DayContent.astro'
 import { plainDay, shiftDay, today } from '../lib/dates'
 let before = Astro.url.searchParams.get('before') || shiftDay(today(), 1)
-try { plainDay(before) } catch { return new Response('Invalid date cursor', { status: 400 }) }
+try {
+  plainDay(before)
+} catch {
+  return new Response('Invalid date cursor', { status: 400 })
+}
 const { entries, error } = await getLiveCollection('days', { before, limit: 3 })
-if (error) { console.error(JSON.stringify({ event: 'feed-error', message: error.message })); Astro.response.status = 503 }
-Astro.response.headers.set('Cache-Control', error || entries?.some(e => e.data.warnings.length) ? 'no-store' : 'public, max-age=30, s-maxage=60')
+if (error) {
+  console.error(JSON.stringify({ event: 'feed-error', message: error.message }))
+  Astro.response.status = 503
+}
+Astro.response.headers.set(
+  'Cache-Control',
+  error || entries?.some((e) => e.data.warnings.length)
+    ? 'no-store'
+    : 'public, max-age=30, s-maxage=60'
+)
 const older = entries?.at(-1)?.id
 ---
+
 <Layout>
-  <section class="intro"><h1>Latest</h1></section>
-  <div class="feed-toolbar"><span>THE DAYS <span class="muted">/ newest first</span></span><form action="/" method="get"><label for="before">Before</label><input id="before" name="before" type="date" value={before} required /><button type="submit">Go →</button></form></div>
-  {error ? <section class="notice"><h2>Days is temporarily unavailable</h2><p>The database may need configuration or migration. Please try again shortly.</p></section> : entries?.map(entry => <DayContent day={entry.data} />)}
-  <nav class="pagination" aria-label="Feed pagination"><a href="/">Back to today</a>{older && <a class="button" href={`/?before=${older}`}>Earlier days ↓</a>}</nav>
+  <section class="intro">
+    <h1>Latest</h1>
+  </section>
+  <div class="feed-toolbar">
+    <span>
+      THE DAYS <span class="muted">/ newest first</span>
+    </span>
+    <form action="/" method="get">
+      <label for="before">Before</label>
+      <input id="before" name="before" type="date" value={before} required />
+      <button type="submit">Go →</button>
+    </form>
+  </div>
+  {error ? (
+    <section class="notice">
+      <h2>Days is temporarily unavailable</h2>
+      <p>The database may need configuration or migration. Please try again shortly.</p>
+    </section>
+  ) : (
+    entries?.map((entry) => <DayContent day={entry.data} />)
+  )}
+  <nav class="pagination" aria-label="Feed pagination">
+    <a href="/">Back to today</a>
+    {older && (
+      <a class="button" href={`/?before=${older}`}>
+        Earlier days ↓
+      </a>
+    )}
+  </nav>
 </Layout>

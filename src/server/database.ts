@@ -11,13 +11,19 @@ export async function readItems(db: Client, first: string, last: string) {
     args: [first, last],
   })
   if (result.rows.length > 5000) throw new Error('Too many source items; narrow the date range')
-  return result.rows.map(row => JSON.parse(String(row.payload)) as SourceItem)
+  return result.rows.map((row) => JSON.parse(String(row.payload)) as SourceItem)
 }
 export function eventFromRow(row: Row): EditorialEvent {
   return {
-    id: String(row.id), day: String(row.day), title: String(row.title),
-    notes: String(row.notes), tags: JSON.parse(String(row.tags)), public: Boolean(row.is_public),
-    version: Number(row.version), camera: String(row.camera), at: String(row.at),
+    id: String(row.id),
+    day: String(row.day),
+    title: String(row.title),
+    notes: String(row.notes),
+    tags: JSON.parse(String(row.tags)),
+    public: Boolean(row.is_public),
+    version: Number(row.version),
+    camera: String(row.camera),
+    at: String(row.at),
   }
 }
 export async function readEvents(db: Client, first: string, last: string, admin = false) {

@@ -1,8 +1,11 @@
 ---
 import '../styles/global.css'
-interface Props { title?: string }
+interface Props {
+  title?: string
+}
 const { title = 'Latest' } = Astro.props
 ---
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -14,10 +17,20 @@ const { title = 'Latest' } = Astro.props
   </head>
   <body>
     <header class="site-header">
-      <a class="wordmark" href="/" aria-label="Days home">days<span>.</span></a>
-      <nav aria-label="Main navigation"><a href="/">The days</a><a href="https://vod.ohn.sh">VOD ↗</a><a href="/admin/">Admin</a></nav>
+      <a class="wordmark" href="/" aria-label="Days home">
+        days<span>.</span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="/">The days</a>
+        <a href="https://vod.ohn.sh">VOD ↗</a>
+        <a href="/admin/">Admin</a>
+      </nav>
     </header>
-    <main><slot /></main>
-    <footer class="site-footer"><span>John Sherrell</span></footer>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <span>John Sherrell</span>
+    </footer>
   </body>
 </html>

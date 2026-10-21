@@ -8,9 +8,15 @@ export async function adminIdentity(request: Request, issuer: string, audience: 
     if (url.protocol !== 'https:' || !url.hostname.endsWith('.cloudflareaccess.com')) return null
     const keys = createRemoteJWKSet(new URL('/cdn-cgi/access/certs', issuer))
     const { payload } = await jwtVerify(token, keys, {
-      issuer, audience, algorithms: ['RS256'], requiredClaims: ['exp', 'sub', 'email'],
+      issuer,
+      audience,
+      algorithms: ['RS256'],
+      requiredClaims: ['exp', 'sub', 'email'],
     })
     return typeof payload.sub === 'string' && typeof payload.email === 'string'
-      ? { id: payload.sub, email: payload.email } : null
-  } catch { return null }
+      ? { id: payload.sub, email: payload.email }
+      : null
+  } catch {
+    return null
+  }
 }

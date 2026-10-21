@@ -9,11 +9,15 @@ export function shiftDay(day: string, days: number) {
   return Temporal.PlainDate.from(plainDay(day)).add({ days }).toString()
 }
 export function dayFromInstant(value: string | number, timezone = TIMEZONE) {
-  const instant = typeof value === 'number'
-    ? Temporal.Instant.fromEpochMilliseconds(value) : Temporal.Instant.from(value)
+  const instant =
+    typeof value === 'number'
+      ? Temporal.Instant.fromEpochMilliseconds(value)
+      : Temporal.Instant.from(value)
   return instant.toZonedDateTimeISO(timezone).toPlainDate().toString()
 }
-export function today() { return dayFromInstant(Date.now()) }
+export function today() {
+  return dayFromInstant(Date.now())
+}
 export function dayBounds(day: string, timezone = TIMEZONE) {
   const date = Temporal.PlainDate.from(plainDay(day))
   return {
