@@ -1,0 +1,23 @@
+---
+import '../styles/global.css'
+interface Props { title?: string }
+const { title = 'Latest' } = Astro.props
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Days — an archive." />
+    <title>{title} · Days</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="wordmark" href="/" aria-label="Days home">days<span>.</span></a>
+      <nav aria-label="Main navigation"><a href="/">The days</a><a href="https://vod.ohn.sh">VOD ↗</a><a href="/admin/">Admin</a></nav>
+    </header>
+    <main><slot /></main>
+    <footer class="site-footer"><span>John Sherrell</span></footer>
+  </body>
+</html>

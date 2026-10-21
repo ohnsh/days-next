@@ -1,0 +1,34 @@
+{
+  "name": "days-next",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "db:dev": "mkdir -p .data && turso dev --db-file .data/days.db --port 8080",
+    "types": "wrangler types",
+    "build": "astro build",
+    "check": "astro check",
+    "test": "bun test test",
+    "test:browser": "node scripts/browser-smoke.mjs",
+    "preview": "astro preview",
+    "db:migrate": "bun run scripts/migrate.ts",
+    "db:seed": "bun run scripts/seed.ts",
+    "sync": "bun run scripts/sync.ts",
+    "deploy": "astro build && wrangler deploy"
+  },
+  "dependencies": {
+    "astro": "7.4.1",
+    "@astrojs/cloudflare": "14.4.1",
+    "@js-temporal/polyfill": "0.5.1",
+    "@libsql/client": "0.18.0",
+    "jose": "6.2.12",
+    "vod-player-astro": "file:../vod/vod-player-astro"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@playwright/test": "1.64.1",
+    "@types/bun": "1.4.3",
+    "typescript": "6.0.3",
+    "wrangler": "4.151.3"
+  }
+}

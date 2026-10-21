@@ -1,0 +1,5 @@
+DAYS_DATABASE_URL=http://127.0.0.1:8080
+DAYS_AUTH_TOKEN=
+# Optional: needed only by `bun run sync`, not by page rendering.
+# GITHUB_TOKEN=
+# YT_API_KEY=

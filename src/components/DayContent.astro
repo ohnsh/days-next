@@ -1,0 +1,41 @@
+---
+import VodPlayer from 'vod-player-astro'
+import YouTube from './YouTube.astro'
+import { dayTitle, dayUrl } from '../lib/dates'
+import type { Day, SourceItem } from '../lib/types'
+interface Props { day: Day; expanded?: boolean }
+const { day, expanded = false } = Astro.props
+const commits = day.items.filter(i => i.source === 'github')
+const videos = day.items.filter(i => i.source === 'youtube')
+const repos = new Map<string, SourceItem[]>()
+for (const item of commits) repos.set(item.group, [...repos.get(item.group) ?? [], item])
+const count = day.events.length + day.cameras.length + day.items.length
+---
+<article class="day-card">
+  <header class="day-heading">
+    <div><p class="eyebrow"><time datetime={day.day}>{day.day}</time></p><h2><a href={dayUrl(day.day)}>{dayTitle(day.day)}</a></h2></div>
+    <span class="day-count">{count ? `${day.cameras.length} cameras · ${day.items.length} entries` : 'An open page'}</span>
+  </header>
+  {day.warnings.map(warning => <p class="notice" role="status">{warning}</p>)}
+  {day.events.length > 0 && <section class="day-section"><h3><span class="section-dot amber"></span>Noted</h3>
+    {day.events.map(event => <article class="note"><h4>{event.title}</h4><p class="prewrap">{event.notes}</p><div class="tags">{event.tags.map(tag => <span>{tag}</span>)}</div>
+      {event.camera && event.at && <a href={`https://vod.ohn.sh/embed?${new URLSearchParams({ camera: event.camera, at: event.at })}`}>Open this moment ↗</a>}
+    </article>)}
+  </section>}
+  {day.cameras.length > 0 && <section class="day-section"><h3><span class="section-dot"></span>Recorded <span class="section-meta">The day's available footage</span></h3>
+    <div class="media-grid">{day.cameras.map(camera => <article class="camera-card">
+      <VodPlayer poster={camera.poster || '/poster-placeholder.svg'} title={`${camera.name} — ${day.day}`} camera={camera.id} day={camera.playerDay} at={camera.at} controls="minimal" zoom="day" />
+      <div class="media-caption"><h4>{camera.name}</h4><span>{Math.round(camera.coveredMs / 60000).toLocaleString()} min · {camera.count} recordings</span></div>
+    </article>)}</div>
+  </section>}
+  {videos.length > 0 && <section class="day-section"><h3><span class="section-dot red"></span>On YouTube <span class="section-meta">{videos.length} videos</span></h3>
+    <div class="media-grid">{videos.map(item => <YouTube {item} />)}</div>
+  </section>}
+  {commits.length > 0 && <section class="day-section"><h3><span class="section-dot green"></span>Made & changed <span class="section-meta">{commits.length} commits</span></h3>
+    <div class="repo-list">{[...repos].map(([repo, items]) => <details open={expanded}>
+      <summary><span>{repo}</span><span class="pill">{items.length}</span></summary>
+      <ul>{items.sort((a,b) => b.occurredAt.localeCompare(a.occurredAt)).map(item => <li><a href={item.url}>{item.title}</a><code>{item.id.split(':').at(-1)?.slice(0, 7)}</code></li>)}</ul>
+    </details>)}</div>
+  </section>}
+  {!count && !day.warnings.length && <p class="empty">Nothing gathered for this day yet.</p>}
+</article>

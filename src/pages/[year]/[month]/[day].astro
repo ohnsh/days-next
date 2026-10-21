@@ -1,0 +1,16 @@
+---
+import { getLiveEntry } from 'astro:content'
+import Layout from '../../../layouts/Layout.astro'
+import DayContent from '../../../components/DayContent.astro'
+import { dayTitle, dayUrl, plainDay, shiftDay } from '../../../lib/dates'
+const key = `${Astro.params.year}-${Astro.params.month}-${Astro.params.day}`
+try { plainDay(key) } catch { return new Response('Day not found', { status: 404 }) }
+const { entry, error } = await getLiveEntry('days', key)
+if (error) { console.error(JSON.stringify({ event: 'day-error', day: key, message: error.message })); Astro.response.status = 503 }
+Astro.response.headers.set('Cache-Control', error || entry?.data.warnings.length ? 'no-store' : 'public, max-age=30, s-maxage=60')
+---
+<Layout title={dayTitle(key)}>
+  <div class="page-intro"><a href="/">← All days</a><p class="eyebrow">One day in the archive · Central time</p></div>
+  {error ? <p class="notice">This day is temporarily unavailable. Please try again shortly.</p> : entry && <DayContent day={entry.data} expanded />}
+  <nav class="pagination" aria-label="Day navigation"><a href={dayUrl(shiftDay(key, -1))}>← Previous day</a><a href={dayUrl(shiftDay(key, 1))}>Next day →</a></nav>
+</Layout>

@@ -1,0 +1,71 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { daysDatabase } from '../../server/runtime'
+import { readEvents } from '../../server/database'
+import { plainDay, shiftDay, today } from '../../lib/dates'
+let selected = Astro.url.searchParams.get('day') || today()
+try { plainDay(selected) } catch { return new Response('Invalid day', { status: 400 }) }
+const db = daysDatabase()
+const [events, sync] = await Promise.all([readEvents(db, shiftDay(selected, -30), selected, true), db.execute('SELECT * FROM sync_runs ORDER BY source')]).finally(() => db.close())
+---
+<Layout title="Administration">
+  <section class="page-intro"><h1>Days Admin</h1><p class="muted">Signed in as {Astro.locals.admin?.email}. Events belong to Days; recording storage belongs to VOD.</p></section>
+  <div class="admin-grid">
+    <form id="event-form" class="admin-form">
+      <h2>Notes</h2>
+      <input type="hidden" name="id" value="" /><input type="hidden" name="version" value="0" />
+      <label>Day<input type="date" name="day" value={selected} required /></label>
+      <label>Title<input name="title" maxlength="200" required /></label>
+      <label>Notes<textarea name="notes" maxlength="20000"></textarea></label>
+      <label>Tags <span class="muted">Comma-separated</span><input name="tags" placeholder="home, projects, a good day" /></label>
+      <label>Camera ID <span class="muted">Optional playback link</span><input name="camera" /></label>
+      <label>Recording timestamp <span class="muted">ISO timestamp with offset or Z</span><input name="at" placeholder="2026-10-20T14:30:00-05:00" /></label>
+      <label class="checkbox"><input type="checkbox" name="public" /> Publish on the day page</label>
+      <p class="muted">These editorial notes link to footage but do not protect recordings from VOD pruning.</p>
+      <div><button type="submit">Save event</button> <button type="reset">New event</button></div>
+      <p id="status" class="status" role="status"></p>
+    </form>
+    <section>
+      <h2>Source imports</h2>
+      <div class="admin-list">{sync.rows.map(row => <article><h3>{String(row.source)}</h3><p>{Number(row.item_count).toLocaleString()} public items<br /><time>{String(row.finished_at)}</time></p></article>)}</div>
+      {!sync.rows.length && <p class="notice">Run the seed or sync command to import source data.</p>}
+      <p class="muted">Imports run with <code>bun run sync</code>. The site reads the latest completed import immediately.</p>
+      <h2>Recent events</h2>
+      <form class="inline-form" method="get"><label for="event-day">Through</label><input type="date" name="day" id="event-day" value={selected} /><button>Browse</button></form>
+      <p class="muted">Showing the preceding 31 days.</p>
+      <div class="admin-list">{events.map(event => <article><p class="eyebrow">{event.day} · {event.public ? 'Public' : 'Private'}</p><h3>{event.title}</h3><p class="prewrap">{event.notes}</p><p>{event.tags.join(' · ')}</p><button type="button" data-edit={JSON.stringify(event)}>Edit</button> <button type="button" data-delete={JSON.stringify({ id: event.id, version: event.version })}>Delete</button></article>)}</div>
+    </section>
+  </div>
+</Layout>
+<script>
+  const form = document.querySelector<HTMLFormElement>('#event-form')!
+  const status = document.querySelector<HTMLElement>('#status')!
+  const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement
+  async function mutate(method: string, body: unknown) {
+    status.textContent = 'Saving…'
+    try {
+      const response = await fetch('/api/admin/events', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const result = await response.json() as { error?: string }
+      if (!response.ok) throw new Error(result.error || 'Request failed')
+      location.assign(`/admin/?day=${encodeURIComponent(field('day').value)}`)
+    } catch (error) { status.textContent = error instanceof Error ? error.message : 'Request failed' }
+  }
+  form.addEventListener('submit', event => {
+    event.preventDefault()
+    void mutate('POST', { id: field('id').value, version: Number(field('version').value), day: field('day').value,
+      title: field('title').value, notes: field('notes').value, camera: field('camera').value, at: field('at').value,
+      tags: field('tags').value.split(',').map(t => t.trim()).filter(Boolean), public: field('public').checked })
+  })
+  document.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach(button => button.addEventListener('click', () => {
+    const event = JSON.parse(button.dataset.edit!)
+    for (const key of ['id','version','day','title','notes','camera','at']) field(key).value = String(event[key])
+    field('tags').value = event.tags.join(', ')
+    field('public').checked = event.public
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' }); field('title').focus()
+    status.textContent = 'Editing existing event'
+  }))
+  document.querySelectorAll<HTMLButtonElement>('[data-delete]').forEach(button => button.addEventListener('click', () => {
+    void mutate('DELETE', JSON.parse(button.dataset.delete!))
+  }))
+  form.addEventListener('reset', () => { status.textContent = '' })
+</script>
