@@ -6,8 +6,8 @@ temporary checkout and Worker name.
 
 ## Local development
 
-Requires Node 22.22+, Bun, and the Turso CLI. Keep the sibling `../vod/vod-player-astro` component
-available (it is a local package dependency).
+Requires Node 22.22+, Bun, and the Turso CLI. Keep the sibling `../vod-misc/vod-player-astro`
+component available (it is a local package dependency).
 
 ```sh
 bun install
@@ -69,10 +69,34 @@ services are independent of Astro and reused by administration. Source failures 
 from empty days: VOD outages display a notice, while database failures return a 503 rather than an
 empty archive.
 
-Live loaders provide day cache tags. Successful public pages currently use short HTTP freshness
-headers (30 seconds browser, 60 seconds shared cache), not a materialized server-side page cache.
-Admin responses and degraded pages use `no-store`. A later cache-provider integration can consume
-the tags for targeted invalidation; live collections themselves do not cache database queries.
+Successful public pages use Astro's Cloudflare route cache: 60 seconds fresh, with up to 15 seconds
+stale-while-revalidate. The adapter enables Workers Caching in the generated deployment config;
+cache hits skip rendering and all its database/API requests. Browser responses require revalidation.
+The small cache-provider wrapper sets `stale-if-error=0` so failures cannot extend cached content
+indefinitely. Admin responses and degraded pages use `no-store` and do not opt into route caching.
+Cache storage is platform-managed; no KV binding or in-process query cache is used.
+
+Pages carry a `days` tag and `day:YYYY-MM-DD` tags for every represented day, so a per-day purge
+also clears feeds containing that day. Successful editorial writes purge `days` (including the old
+date when an event moves). A purge failure is logged without reporting an already-committed write as
+failed; the TTL remains the fallback. Deployments start with a fresh cache.
+
+Authenticated administrators can request targeted invalidation using
+`POST /api/admin/cache?day=2026-10-18`, with same-origin `Origin` and
+`Content-Type: application/json` headers, under the existing Access authentication. This endpoint
+purges rendered Days routes, not VOD's separate response cache. External VOD/import notifications
+are not wired automatically; otherwise new recordings/imports become visible through expiry. Dates
+are in America/Chicago. In development Astro disables route caching and the purge endpoint returns
+`purged: false`.
+
+VOD owns query optimization and its discovery API response cache (30 seconds fresh plus 15 seconds
+SWR). The two independent layers can accumulate staleness: allow roughly two minutes under normal
+conditions for an unannounced change to appear in Days. The live collection does not cache database
+queries itself, and click-to-load players still make their own VOD requests.
+
+After deployment, verify repeated requests produce `Cf-Cache-Status: HIT`, verify degraded/admin
+responses bypass caching, and verify a day purge causes a miss on both the day page and a feed
+containing it. Local builds validate headers/configuration, not Cloudflare's distributed cache.
 
 ### Dates
 

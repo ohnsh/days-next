@@ -14,12 +14,18 @@ if (error) {
   console.error(JSON.stringify({ event: 'feed-error', message: error.message }))
   Astro.response.status = 503
 }
+const cacheable = !error && !!entries && !entries.some((e) => e.data.warnings.length)
 Astro.response.headers.set(
   'Cache-Control',
-  error || entries?.some((e) => e.data.warnings.length)
-    ? 'no-store'
-    : 'public, max-age=30, s-maxage=60'
+  cacheable ? 'public, max-age=0, must-revalidate' : 'no-store'
 )
+if (Astro.cache.enabled) {
+  Astro.cache.set(
+    cacheable
+      ? { maxAge: 60, swr: 15, tags: ['days', ...entries.map((entry) => `day:${entry.id}`)] }
+      : false
+  )
+}
 const older = entries?.at(-1)?.id
 ---
 

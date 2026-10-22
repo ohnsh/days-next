@@ -14,10 +14,14 @@ if (error) {
   console.error(JSON.stringify({ event: 'day-error', day: key, message: error.message }))
   Astro.response.status = 503
 }
+const cacheable = !error && !!entry && !entry.data.warnings.length
 Astro.response.headers.set(
   'Cache-Control',
-  error || entry?.data.warnings.length ? 'no-store' : 'public, max-age=30, s-maxage=60'
+  cacheable ? 'public, max-age=0, must-revalidate' : 'no-store'
 )
+if (Astro.cache.enabled) {
+  Astro.cache.set(cacheable ? { maxAge: 60, swr: 15, tags: ['days', `day:${key}`] } : false)
+}
 ---
 
 <Layout title={dayTitle(key)}>

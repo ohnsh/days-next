@@ -23,7 +23,7 @@
     "@srcery-colors/srcery-palette": "^2.0.0",
     "astro": "7.4.1",
     "jose": "6.2.12",
-    "vod-player-astro": "file:../vod/vod-player-astro"
+    "vod-player-astro": "file:../vod-misc/vod-player-astro"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
