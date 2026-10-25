@@ -1,0 +1,134 @@
+---
+title: Stupid sidebar tricks
+date: 2026-03-05
+---
+
+I wanted to add my name and some external (non-social) links to the main layout. Starlight, being a documentation framework, isn't really designed with that sort of thing in mind. I decided to use the sidebar, essentially dividing it into a header (for the author's name), a main area, and a footer (for external links). Note that the sidebar is hidden behind a menu button at mobile sizes.
+
+You can always [override Starlight's `<Sidebar>` component](https://starlight.astro.build/reference/overrides/#sidebar), which is probably what I should do. But for now, this config-only hack kind of works, helped by some custom CSS for the `.author` class.
+
+```js
+// astro.config.mjs
+{
+  sidebar: [
+    // header area
+    {
+      label: 'John Sherrell',
+      link: 'https://j.ohn.sh',
+      attrs: { target: '_blank', class: 'author' },
+    },
+    // main area
+    { label: 'March', autogenerate: { directory: '2026/mar' } },
+    ...,
+    // footer area
+    {
+      label: 'scratch.ohn.sh',
+      link: 'https://scratch.ohn.sh',
+      attrs: { target: '_blank', style: 'margin-top: 2em' },
+    },
+    { label: 'j.ohn.sh', link: 'https://j.ohn.sh', attrs: { target: '_blank' } },
+  ]
+}
+```
+
+## How to favicon in Starlight
+
+For background, see the oft-cited Evil Martians article [How to Favicon in 2026](https://evilmartians.com/chronicles/how-to-favicon-in-2021-six-files-that-fit-most-needs). The main takeaway is that SVG favicons are perfect but Safari still doesn't support them. The obvious reason they're perfect is resolution independence. But another important reason is that, because they can embed CSS, they can adapt to light or dark color schemes with a media query.
+
+The current approach is to provide a catch-all favicon.ico ([works in IE5!](https://en.wikipedia.org/wiki/Favicon#History)), a PNG for Safari (possibly several PNGs at various resolutions), and an SVG for the other modern browsers. It's important for the `<link>` tags to appear in that order, because browsers will pick the last one with an icon type they support.
+
+Unfortunately, Starlight only lets you configure one favicon directly. For the others, `<link>` tags need to be injected manually. But again, the order in which the HTML is rendered is important. Here's a configuration that works:
+
+```js
+// astro.config.mjs
+{
+  head: [
+    {
+      tag: 'link',
+      attrs: { rel: 'icon', href: '/favicon.ico', sizes: '32x32' }
+    },
+    {
+      tag: 'link',
+      attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', type: 'image/png' }
+    },
+  ],
+  // favicon value always rendered after custom tags (in my limited testing)
+  // so it needs to be the preferred icon.
+  favicon: '/favicon.svg'
+}
+```
+
+## Automating OpenGraph images with route middleware and embedded YouTube thumbnails
+
+```ts
+import { defineRouteMiddleware, type StarlightRouteData } from '@astrojs/starlight/route-data'
+import type { Day } from './lib/days'
+import type { Page } from 'astro'
+import type { CollectionEntry } from 'astro:content'
+
+function getPagination(page: Page): StarlightRouteData['pagination'] {
+  const next = page.url.next ? { href: page.url.next } : undefined
+  const prev = page.url.prev ? { href: page.url.prev } : undefined
+  return { next, prev }
+}
+
+export const onRequest = defineRouteMiddleware(async (context) => {
+  const { head, pagination } = context.locals.starlightRoute
+  const { day, page } = context.locals.days ?? {}
+  const screenshotUrl = 'https://days.ohn.sh/screenshot-3-17.png'
+
+  if (page) {
+    const ogImages = ogImagesFromPage(page)
+    appendOgImages(head, ...ogImages)
+    Object.assign(pagination, getPagination(page))
+  } else if (day) {
+    const ogImages = extractOgImages(day)
+    appendOgImages(head, ...ogImages)
+  }
+
+  appendOgImages(head, screenshotUrl)
+})
+
+function extractOgImages(entry: Day) {
+  const { meta, youtube } = entry
+  if (meta?.data.ogImage) {
+    return [meta.data.ogImage]
+  }
+
+  const priority = ['🐶', '🎣', '🎙️', '🏃‍♂️', '🤳', '🚗']
+
+  const tagScore = (tag: string) =>
+    priority.includes(tag) ? priority.indexOf(tag) : priority.length
+
+  const entryScore = ({ data: { tags }}: CollectionEntry<'youtube'>) => tags ? Math.min(...tags.map(tagScore)) : priority.length
+
+  const videoIds =
+    youtube
+      .sort((a, b) => entryScore(a) - entryScore(b))
+      .map(({ data }) => data.videoId) ?? []
+
+  return videoIds.map((videoId) => `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`)
+}
+
+function ogImagesFromPage(page: Page) {
+  for (const day of page.data) {
+    const ogImages = extractOgImages(day)
+    if (ogImages.length > 0) {
+      return ogImages
+    }
+  }
+  return []
+}
+
+function appendOgImages(head: StarlightRouteData['head'], ...ogImages: string[]) {
+  ogImages.forEach((ogImage) => {
+    head.push({ tag: 'meta', attrs: { property: 'og:image', content: ogImage } })
+  })
+}
+```
+
+```
+https://i.ytimg.com/vi/{id}/maxresdefault.jpg
+```
+
+(from inspecting the `<lite-youtube>` component -- @astro-community/astro-embed-youtube)

@@ -1,0 +1,36 @@
+---
+title: 'Starlight CSS tweaks: A hero for a blog index page'
+date: 2026-03-07
+tags: [css]
+---
+
+[Yesterday](/2026/mar/6), I created (a rough version of) an Astro component that renders a stream of recent posts for a blog index page. I'm already using it on [days.ohn.sh](https://days.ohn.sh). For now, I'm using Astro's [Starlight](https://starlight.astro.build) documentation framework, which means the default styling isn't optimized for a blog.
+
+In Starlight, styles can be customized site-wide with the global `customCss` config option. In this case, I only wanted to modify the hero on the main index page. Luckily, you can `import` CSS into an MDX page, just like you would in an Astro component. Doing so allows for page-specific CSS tweaks.
+
+```css
+/* splash.css */
+:root {
+  --sl-sidebar-width: 15rem;
+}
+
+.hero {
+  /* Remove second column when there's no image. */
+  grid-template-columns: auto;
+  padding-block-start: 3rem;
+
+  /* when centered */
+  padding-inline: min(3rem, 8%);
+  @media (min-width: 50rem) {
+    /* when not centered */
+    padding-inline-start: 0;
+  }
+
+  & .tagline { max-width: 80ch; }
+}
+
+```
+
+## External links handling
+
+Astro has no built-in option to open external links in a new tab. But it does allow you to configure plugins for [remark/rehype](https://remark.js.org), which it uses behind the scenes for Markdown support. Consequently, external links can be configured using the [rehype-external-links](https://github.com/rehypejs/rehype-external-links) plugin.

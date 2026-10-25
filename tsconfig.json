@@ -2,5 +2,11 @@
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
   "exclude": ["dist", "node_modules"],
-  "compilerOptions": { "types": ["bun"] }
+  "compilerOptions": {
+    "types": ["bun"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "assets/*": ["./src/content/posts/2026/08/assets/*"]
+    }
+  }
 }

@@ -8,7 +8,11 @@ const videoId = item.id.replace(/^youtube:/, '')
 ---
 
 <article class="youtube-card">
-  <days-youtube data-video={videoId} data-title={item.title}>
+  <days-youtube
+    data-video={videoId}
+    data-title={item.title}
+    data-short={item.isShort ? 'true' : undefined}
+  >
     <button type="button" aria-label={`Load YouTube video: ${item.title}`}>
       {item.thumbnail && (
         <img src={item.thumbnail} alt="" loading="lazy" width="480" height="270" />

@@ -1,0 +1,37 @@
+---
+import type { CollectionEntry } from 'astro:content'
+import { extractExcerptHtml, postUrl, shiftHeadingsHtml } from '../lib/posts'
+
+interface Props {
+  post: CollectionEntry<'posts'>
+  mode: 'full' | 'excerpt'
+  titleLevel: 1 | 2 | 3 | 4
+}
+
+const { post, mode, titleLevel } = Astro.props
+let contentHtml = shiftHeadingsHtml(
+  await Astro.slots.render('default'),
+  titleLevel === 1 ? 0 : titleLevel - 1
+)
+let hasMore = false
+
+if (mode === 'excerpt') {
+  if (post.data.excerpt) {
+    const excerptText = post.data.excerpt
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+    contentHtml = `<p>${excerptText}</p>`
+    hasMore = true
+  } else {
+    const excerpt = extractExcerptHtml(contentHtml)
+    contentHtml = excerpt.html
+    hasMore = excerpt.hasMore
+  }
+}
+---
+
+<div class="post-content" set:html={contentHtml} />
+{mode === 'excerpt' && hasMore && (
+  <a class="read-more" href={postUrl(post)}>Read full post →</a>
+)}

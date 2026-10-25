@@ -1,0 +1,31 @@
+---
+import { getEntry } from 'astro:content'
+import Layout from '../../layouts/Layout.astro'
+import Post from '../../components/Post.astro'
+import { dayUrl } from '../../lib/dates'
+const slug = Astro.params.slug
+const post = slug ? await getEntry('posts', slug) : undefined
+
+if (!post || (post.data.draft && !import.meta.env.DEV)) {
+  return new Response('Post not found', { status: 404 })
+}
+
+const cacheable = import.meta.env.DEV || !post.data.draft
+Astro.response.headers.set(
+  'Cache-Control',
+  cacheable ? 'public, max-age=0, must-revalidate' : 'no-store'
+)
+if (Astro.cache.enabled) {
+  Astro.cache.set(
+    cacheable ? { maxAge: 60, swr: 15, tags: ['days', `day:${post.data.day}`] } : false
+  )
+}
+---
+
+<Layout title={post.data.title}>
+  <div class="page-intro">
+    <a href={dayUrl(post.data.day)}>← Back to {post.data.day}</a>
+    <p class="eyebrow">A post from the archive</p>
+  </div>
+  <Post post={post} titleLevel={1} />
+</Layout>

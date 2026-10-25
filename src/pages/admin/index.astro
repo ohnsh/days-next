@@ -1,63 +1,102 @@
 ---
 import Layout from '../../layouts/Layout.astro'
-import { daysDatabase } from '../../server/runtime'
-import { readEvents } from '../../server/database'
-import { plainDay, shiftDay, today } from '../../lib/dates'
+import { dayBounds, plainDay, shiftDay, today } from '../../lib/dates'
+import { readAdminState } from '../../server/editorial'
+import { daysDatabase, vodAdminToken, vodBaseUrl } from '../../server/runtime'
+
 let selected = Astro.url.searchParams.get('day') || today()
 try {
   plainDay(selected)
 } catch {
   return new Response('Invalid day', { status: 400 })
 }
+const first = shiftDay(selected, -30)
 const db = daysDatabase()
-const [events, sync] = await Promise.all([
-  readEvents(db, shiftDay(selected, -30), selected, true),
+const [vodResult, syncResult] = await Promise.all([
+  readAdminState(
+    dayBounds(first).start,
+    dayBounds(selected).end,
+    vodBaseUrl(),
+    vodAdminToken()
+  ).then(
+    (data) => ({ data, error: '' }),
+    (error) => ({
+      data: { events: [], tags: [], cameras: [], warning: String(error) },
+      error: String(error),
+    })
+  ),
   db.execute('SELECT * FROM sync_runs ORDER BY source'),
 ]).finally(() => db.close())
+const { events, tags, cameras } = vodResult.data
+const warning = vodResult.error || vodResult.data.warning
 ---
 
 <Layout title="Administration">
   <section class="page-intro">
     <h1>Days Admin</h1>
     <p class="muted">
-      Signed in as {Astro.locals.admin?.email}. Events belong to Days; recording storage belongs to
-      VOD.
+      Signed in as {Astro.locals.admin?.email}. Events and recording protection are managed by VOD.
     </p>
+    {warning && <p class="notice">{warning}</p>}
   </section>
   <div class="admin-grid">
-    <form id="event-form" class="admin-form">
-      <h2>Notes</h2>
+    <form id="event-form" class="admin-form" data-day={selected}>
+      <h2>VOD event</h2>
       <input type="hidden" name="id" value="" />
       <input type="hidden" name="version" value="0" />
-      <label>
-        Day
-        <input type="date" name="day" value={selected} required />
-      </label>
       <label>
         Title
         <input name="title" maxlength="200" required />
       </label>
       <label>
-        Notes<textarea name="notes" maxlength="20000"></textarea>
+        Notes<textarea name="notes" maxlength="16000"></textarea>
       </label>
       <label>
-        Tags <span class="muted">Comma-separated</span>
-        <input name="tags" placeholder="home, projects, a good day" />
+        Start <span class="muted">Chicago local time</span>
+        <input
+          type="datetime-local"
+          name="start"
+          step="0.001"
+          value={`${selected}T12:00`}
+          required
+        />
       </label>
       <label>
-        Camera ID <span class="muted">Optional playback link</span>
-        <input name="camera" />
+        End <span class="muted">Chicago local time</span>
+        <input type="datetime-local" name="end" step="0.001" value={`${selected}T13:00`} required />
       </label>
       <label>
-        Recording timestamp <span class="muted">ISO timestamp with offset or Z</span>
-        <input name="at" placeholder="2026-10-20T14:30:00-05:00" />
+        Camera scope
+        <select name="cameraScope">
+          <option value="all">All cameras</option>
+          <option value="selected">Selected cameras</option>
+        </select>
+      </label>
+      <label>
+        Cameras <span class="muted">Used when scope is selected</span>
+        <select name="cameraIds" multiple size="5">
+          {cameras.map((camera) => (
+            <option value={camera.id}>
+              {camera.name} ({camera.id})
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Tags <span class="muted">Comma-separated; new names create public VOD tags</span>
+        <input name="tags" list="event-tags" placeholder="home, projects, a good day" />
+        <datalist id="event-tags">
+          {tags.map((tag) => (
+            <option value={tag.name} />
+          ))}
+        </datalist>
       </label>
       <label class="checkbox">
-        <input type="checkbox" name="public" /> Publish on the day page
+        <input type="checkbox" name="protect" checked /> Protect recordings from pruning
       </label>
-      <p class="muted">
-        These editorial notes link to footage but do not protect recordings from VOD pruning.
-      </p>
+      <label class="checkbox">
+        <input type="checkbox" name="isPublic" /> Publish on the day page
+      </label>
       <div>
         <button type="submit">Save event</button> <button type="reset">New event</button>
       </div>
@@ -66,7 +105,7 @@ const [events, sync] = await Promise.all([
     <section>
       <h2>Source imports</h2>
       <div class="admin-list">
-        {sync.rows.map((row) => (
+        {syncResult.rows.map((row) => (
           <article>
             <h3>{String(row.source)}</h3>
             <p>
@@ -77,7 +116,7 @@ const [events, sync] = await Promise.all([
           </article>
         ))}
       </div>
-      {!sync.rows.length && (
+      {!syncResult.rows.length && (
         <p class="notice">Run the seed or sync command to import source data.</p>
       )}
       <p class="muted">
@@ -95,17 +134,22 @@ const [events, sync] = await Promise.all([
         {events.map((event) => (
           <article>
             <p class="eyebrow">
-              {event.day} · {event.public ? 'Public' : 'Private'}
+              {event.day} · {event.isPublic ? 'Public' : 'Private'} · {event.cameraScope} cameras
             </p>
             <h3>{event.title}</h3>
             <p class="prewrap">{event.notes}</p>
-            <p>{event.tags.join(' · ')}</p>
-            <button type="button" data-edit={JSON.stringify(event)}>
+            <p>{event.tags.map((tag) => tag.name).join(' · ')}</p>
+            <button
+              type="button"
+              data-edit={JSON.stringify(event)}
+              disabled={event.version === undefined}
+            >
               Edit
             </button>{' '}
             <button
               type="button"
               data-delete={JSON.stringify({ id: event.id, version: event.version })}
+              disabled={event.version === undefined}
             >
               Delete
             </button>
@@ -116,9 +160,21 @@ const [events, sync] = await Promise.all([
   </div>
 </Layout>
 <script>
+  import { Temporal } from '@js-temporal/polyfill'
+
+  const timezone = 'America/Chicago'
   const form = document.querySelector<HTMLFormElement>('#event-form')!
   const status = document.querySelector<HTMLElement>('#status')!
-  const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement
+  const input = (name: string) => form.elements.namedItem(name) as HTMLInputElement
+  const select = (name: string) => form.elements.namedItem(name) as HTMLSelectElement
+  const toEpoch = (value: string) =>
+    Temporal.PlainDateTime.from(value).toZonedDateTime(timezone, { disambiguation: 'reject' })
+      .epochMilliseconds
+  const fromEpoch = (value: number) => {
+    const local = Temporal.Instant.fromEpochMilliseconds(value).toZonedDateTimeISO(timezone)
+    return `${local.toPlainDate()}T${local.toPlainTime().toString({ smallestUnit: 'millisecond' })}`
+  }
+
   async function mutate(method: string, body: unknown) {
     status.textContent = 'Saving…'
     try {
@@ -129,46 +185,67 @@ const [events, sync] = await Promise.all([
       })
       const result = (await response.json()) as { error?: string }
       if (!response.ok) throw new Error(result.error || 'Request failed')
-      location.assign(`/admin/?day=${encodeURIComponent(field('day').value)}`)
+      location.assign(`/admin/?day=${encodeURIComponent(form.dataset.day || '')}`)
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : 'Request failed'
     }
   }
+
   form.addEventListener('submit', (event) => {
     event.preventDefault()
-    void mutate('POST', {
-      id: field('id').value,
-      version: Number(field('version').value),
-      day: field('day').value,
-      title: field('title').value,
-      notes: field('notes').value,
-      camera: field('camera').value,
-      at: field('at').value,
-      tags: field('tags')
-        .value.split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
-      public: field('public').checked,
-    })
+    try {
+      const id = input('id').value
+      void mutate(id ? 'PUT' : 'POST', {
+        id,
+        version: Number(input('version').value),
+        title: input('title').value,
+        notes: input('notes').value,
+        start: toEpoch(input('start').value),
+        end: toEpoch(input('end').value),
+        cameraScope: select('cameraScope').value,
+        cameraIds: Array.from(select('cameraIds').selectedOptions, (option) => option.value),
+        tags: input('tags')
+          .value.split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        protect: input('protect').checked,
+        isPublic: input('isPublic').checked,
+      })
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : 'Invalid event time'
+    }
   })
+
   document.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((button) =>
     button.addEventListener('click', () => {
       const event = JSON.parse(button.dataset.edit!)
-      for (const key of ['id', 'version', 'day', 'title', 'notes', 'camera', 'at'])
-        field(key).value = String(event[key])
-      field('tags').value = event.tags.join(', ')
-      field('public').checked = event.public
+      input('id').value = String(event.id)
+      input('version').value = String(event.version ?? 0)
+      input('title').value = event.title
+      input('notes').value = event.notes
+      input('start').value = fromEpoch(event.start)
+      input('end').value = fromEpoch(event.end)
+      select('cameraScope').value = event.cameraScope
+      const selected = new Set(event.cameraIds as string[])
+      for (const option of select('cameraIds').options) option.selected = selected.has(option.value)
+      input('tags').value = event.tags.map((tag: { name: string }) => tag.name).join(', ')
+      input('protect').checked = Boolean(event.protect)
+      input('isPublic').checked = Boolean(event.isPublic)
       form.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      field('title').focus()
+      input('title').focus()
       status.textContent = 'Editing existing event'
     })
   )
+
   document.querySelectorAll<HTMLButtonElement>('[data-delete]').forEach((button) =>
     button.addEventListener('click', () => {
       void mutate('DELETE', JSON.parse(button.dataset.delete!))
     })
   )
+
   form.addEventListener('reset', () => {
+    input('id').value = ''
+    input('version').value = '0'
     status.textContent = ''
   })
 </script>

@@ -1,12 +1,20 @@
 import type { APIRoute } from 'astro'
-import { daysDatabase } from '../../../server/runtime'
-import { ConflictError, InputError, deleteEvent, saveEvent } from '../../../server/editorial'
+import {
+  ConflictError,
+  InputError,
+  UnavailableError,
+  deleteEvent,
+  saveEvent,
+} from '../../../server/editorial'
+import { vodAdminToken, vodBaseUrl } from '../../../server/runtime'
 
 export const ALL: APIRoute = async ({ request, locals, cache }) => {
   if (!locals.admin) return new Response('Forbidden', { status: 403 })
-  if (!['POST', 'DELETE'].includes(request.method))
-    return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST, DELETE' } })
-  // Bound streamed bodies too; Content-Length alone is not reliable.
+  if (!['POST', 'PUT', 'DELETE'].includes(request.method))
+    return new Response('Method not allowed', {
+      status: 405,
+      headers: { Allow: 'POST, PUT, DELETE' },
+    })
   const reader = request.body?.getReader()
   if (!reader) return Response.json({ error: 'Missing body' }, { status: 400 })
   let body = '',
@@ -29,37 +37,33 @@ export const ALL: APIRoute = async ({ request, locals, cache }) => {
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 })
   }
-  const db = daysDatabase()
   const invalidate = async () => {
     if (!cache.enabled) return
     try {
-      // Edits can move an event between days. Purge both feeds and day pages,
-      // including any cached representation of the old day.
       await cache.invalidate({ tags: ['days'] })
     } catch (error) {
-      // The write has committed: do not report a write failure or invite retries.
-      // The short TTL bounds staleness if invalidation is temporarily unavailable.
       console.error(JSON.stringify({ event: 'cache-invalidation-failed', message: String(error) }))
     }
   }
   try {
-    if (request.method === 'DELETE') {
-      await deleteEvent(db, value)
-      await invalidate()
-      return Response.json({ ok: true })
-    }
-    const id = await saveEvent(db, value, locals.admin.id)
+    if (request.method === 'DELETE') await deleteEvent(value, vodBaseUrl(), vodAdminToken())
+    else await saveEvent(value, locals.admin.id, vodBaseUrl(), vodAdminToken())
     await invalidate()
-    return Response.json({ id })
+    return Response.json({ ok: true })
   } catch (error) {
-    if (error instanceof InputError || error instanceof ConflictError)
+    if (
+      error instanceof InputError ||
+      error instanceof ConflictError ||
+      error instanceof UnavailableError
+    )
       return Response.json(
         { error: error.message },
-        { status: error instanceof ConflictError ? 409 : 400 }
+        {
+          status:
+            error instanceof ConflictError ? 409 : error instanceof UnavailableError ? 503 : 400,
+        }
       )
-    console.error(JSON.stringify({ event: 'editorial-write-failed', message: String(error) }))
-    return Response.json({ error: 'Could not save the event' }, { status: 502 })
-  } finally {
-    db.close()
+    console.error(JSON.stringify({ event: 'vod-editorial-write-failed', message: String(error) }))
+    return Response.json({ error: 'Could not save the event in VOD' }, { status: 502 })
   }
 }

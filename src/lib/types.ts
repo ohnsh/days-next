@@ -11,14 +11,25 @@ export interface SourceItem {
   thumbnail?: string
   isShort?: boolean
 }
+export interface EventTag {
+  id: string
+  name: string
+  isPublic: boolean
+  version: number
+}
 export interface EditorialEvent {
   id: string
   day: string
   title: string
   notes: string
-  tags: string[]
-  public: boolean
-  version: number
+  start: number
+  end: number
+  cameraScope: 'all' | 'selected'
+  cameraIds: string[]
+  tags: EventTag[]
+  isPublic: boolean
+  protect?: boolean
+  version?: number
   camera: string
   at: string
 }

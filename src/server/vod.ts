@@ -1,5 +1,5 @@
 import { dayBounds, dayFromInstant, shiftDay } from '../lib/dates'
-import type { CameraCoverage } from '../lib/types'
+import type { CameraCoverage, EditorialEvent, EventTag } from '../lib/types'
 
 interface Camera {
   id: string
@@ -8,7 +8,7 @@ interface Camera {
   first: number
   last: number
 }
-interface Recording {
+export interface Recording {
   id: string
   start: number
   end: number
@@ -21,6 +21,42 @@ async function json<T>(base: string, path: string): Promise<T> {
   return response.json() as Promise<T>
 }
 export const cameras = (base: string) => json<Camera[]>(base, '/api/cameras')
+
+interface ArchiveEvent {
+  id: string
+  title: string
+  notes: string
+  start: number
+  end: number
+  cameraScope: 'all' | 'selected'
+  cameraIds: string[]
+  tags: EventTag[]
+  isPublic: boolean
+  protect?: boolean
+  version?: number
+}
+
+function editorialEvent(event: ArchiveEvent): EditorialEvent {
+  return {
+    ...event,
+    day: dayFromInstant(event.start),
+    camera: event.cameraIds[0] ?? '',
+    at: new Date(event.start).toISOString(),
+  }
+}
+
+export async function vodEvents(base: string, startMs: number, endMs: number) {
+  const params = new URLSearchParams({ start: String(startMs), end: String(endMs) })
+  const events = await json<ArchiveEvent[]>(base, `/api/events?${params}`)
+  return events.map(editorialEvent)
+}
+
+export function eventsForDay(events: EditorialEvent[], day: string) {
+  const { start, end } = dayBounds(day)
+  return events
+    .filter((event) => event.start < end && event.end > start)
+    .map((event) => ({ ...event, day }))
+}
 
 // Merge overlapping intervals so duplicate/overlapping recordings don't inflate coverage.
 export function coveredMilliseconds(
@@ -38,7 +74,12 @@ export function coveredMilliseconds(
   }
   return total
 }
-export async function coverage(base: string, day: string, available: Camera[]) {
+export async function coverage(
+  base: string,
+  day: string,
+  available: Camera[],
+  dayCache?: Map<string, Promise<{ recordings: Recording[] }>>
+) {
   const { start, end } = dayBounds(day)
   const warnings: string[] = []
   const results = await Promise.all(
@@ -51,12 +92,18 @@ export async function coverage(base: string, day: string, available: Camera[]) {
           const dates: string[] = []
           for (let d = localFirst; d <= localLast; d = shiftDay(d, 1)) dates.push(d)
           const responses = await Promise.all(
-            dates.map((d) =>
-              json<{ recordings: Recording[] }>(
-                base,
-                `/api/cameras/${encodeURIComponent(camera.id)}/day?date=${d}`
-              )
-            )
+            dates.map((d) => {
+              const key = `${camera.id}:${d}`
+              let response = dayCache?.get(key)
+              if (!response) {
+                response = json<{ recordings: Recording[] }>(
+                  base,
+                  `/api/cameras/${encodeURIComponent(camera.id)}/day?date=${d}`
+                )
+                dayCache?.set(key, response)
+              }
+              return response
+            })
           )
           const records = [
             ...new Map(

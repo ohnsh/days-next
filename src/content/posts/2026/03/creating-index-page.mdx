@@ -1,0 +1,46 @@
+---
+title: Creating an index page.
+date: 2026-03-06
+---
+
+On a blog, the main (root) page should contain a list of recent posts. Starlight doesn't have that functionality built-in, so here's a first pass at a custom `<RecentPosts>` component. It's already being used at [days.ohn.sh](https://days.ohn.sh).
+
+```astro
+// RecentPosts.astro
+---
+import Preview from './Preview.astro'
+import { getCollection } from 'astro:content'
+
+const posts = await getCollection('docs')
+posts.sort((a, b) => Number(b.data.date) - Number(a.data.date))
+const numPosts = 5
+---
+
+<section>
+  {
+    posts.slice(0, numPosts).map((entry) => (
+        <Preview {entry} />
+        <hr />
+    ))
+  }
+</section>
+<style>
+  hr {
+    margin-block: 3rem;
+    border: none;
+    border-top: 1px solid var(--sl-color-gray-5);
+  }
+</style>
+```
+
+Notice that [Astro's JSX-like templates](https://docs.astro.build/en/reference/astro-syntax/) can contain unwrapped fragments like `<Preview /><hr />`. Additionally, since they only render once (at build time in this case), there's no need for a React-like `key` prop on map-generated elements.
+
+## starlight-blog
+
+The `<Preview />` component is adapted (but greatly simplified) from the excellent [HiDeoo/starlight-blog](https://github.com/HiDeoo/starlight-blog) project. I would just use the starlight-blog plugin directly, but I intend for this project to eventually be a blog platform itself. I'll likely remove the Starlight layer altogether at some point.
+
+## Theme me
+
+It's not particularly hard to [customize Starlight's default theme](https://starlight.astro.build/guides/css-and-tailwind/#theming), but for now I've decided to use [Flexoki](https://delucis.github.io/starlight-theme-flexoki/) with minimal customization. I had fiddled for too long with a custom dark mode and decided that a dual-mode theme was too much to think about at this stage of the project. I considered disabling light mode completely--a GitHub discussion has [unofficial instructions](https://github.com/withastro/starlight/discussions/949)--but using an off-the-shelf theme makes that unnecessary.
+
+The look may drift in the direction of [Srcery](https://github.com/srcery-colors), my new favorite terminal theme. (Flexoki with a gold-ish accent color is already pretty close.)

@@ -40,28 +40,36 @@ explicitly by the shell take precedence. Set:
 - `DAYS_AUTH_TOKEN`: Days database token; empty for the local development server.
 - `GITHUB_TOKEN` / `YT_API_KEY`: optional import-script credentials. Rendering pages does not call
   those source APIs or require those credentials.
+- `VOD_ADMIN_API_TOKEN`: optional VOD admin credential used by `/admin/` through the local
+  `/api/admin/events` proxy. Without it, event editing is unavailable.
 
 `VOD_BASE_URL`, `ACCESS_TEAM_DOMAIN`, and `ACCESS_AUD` are non-secret configuration in
-`wrangler.jsonc`. No VOD write token is used by this prototype.
+`wrangler.jsonc`. Configure `VOD_ADMIN_API_TOKEN` as a Worker secret in production.
 
 ## Routes and data flow
 
 - `/`: three calendar days per page, newest first; `?before=YYYY-MM-DD` is an exclusive date cursor.
   Empty days remain visible and can still have notes added.
 - `/YYYY/MM/DD/`: a permanent day page with previous/next-day navigation.
-- `/admin/`: source import status and create/edit/delete for day notes/highlights.
-- `/api/admin/events`: same-origin JSON mutations, optimistic version checks.
+- `/posts/...`: individual file-based Markdown/MDX posts from `src/content/posts/`.
+- `/admin/`: source import status and VOD event editing.
+- `/api/admin/events`: same-origin event mutations, proxied to VOD with optimistic version checks.
 
 ```text
 GitHub / YouTube → sync scripts → Days libSQL database
-VOD public API                 → camera/day coverage
+VOD `/api/events`               → events and camera/day coverage
+Days `/api/admin/events` → VOD `/api/admin/events` (admin token)
                                       ↓
                            server/days.ts aggregation
                                       ↓
                           loaders/days.ts live loader
                                       ↓
-                          Astro feed and day routes
+                           Astro feed and day routes
 ```
+
+Posts are authored as `.md` or `.mdx` files under `src/content/posts/`, served individually at
+`/posts/...`, and excerpted on day and feed pages. Events are owned by VOD and read from its
+`/api/events` endpoint; the Days database stores imported source items, not event records.
 
 `src/live.config.ts` exposes `getLiveEntry('days', date)` and
 `getLiveCollection('days', { before, limit })`. Collection queries are bounded to 1–7 days. Database
@@ -132,7 +140,7 @@ and Shorts classification. Import data is plain text rendered with Astro escapin
 
 In `astro dev`, administration is available locally and edits are attributed to `local-dev`. This is
 a compile-time development bypass. Keep the dev server on loopback; it can write to whichever
-database `.dev.vars` selects.
+database `.dev.vars` selects and, when configured, modify VOD events.
 
 Production builds require a validated Cloudflare Access JWT, including issuer, audience, expiry,
 subject, and email. Configure one Access application covering `/admin`, `/admin/*`, `/api/admin`,
@@ -140,15 +148,11 @@ and `/api/admin/*`, and set its team domain and audience in `wrangler.jsonc`. An
 configuration denies access. Mutation requests must carry same-origin JSON, and stale
 updates/deletes return 409.
 
-Days events currently have a plain day, title, notes, tags, public/private visibility, and an
-optional camera/timestamp playback link. Private is the default. They are **editorial notes, not VOD
-retention protections**.
-
-The prototype introduces the new Days workspace without cutting over existing VOD event storage or
-deleting its administrator UI. The subsequent cutover needs VOD-owned recording-protection records
-coordinated with the CLI pruning lock, plus reliable reconciliation of protection changes from Days.
-Existing VOD timeline event overlays still read the existing VOD events. The old Days Markdown/MDX
-posts and their custom components have not yet been migrated.
+VOD is the source of truth for events, including their visibility, tags, camera scope, and recording
+retention protection. Public day pages read events from VOD's `/api/events`. The Days `/admin/`
+workspace sends event changes through `/api/admin/events`, which uses `VOD_ADMIN_API_TOKEN` to call
+VOD's `/api/admin/events` API. Set that secret locally in `.dev.vars` and in production as a Worker
+secret. Events marked for protection prevent their associated recordings from being pruned by VOD.
 
 ## Checks
 

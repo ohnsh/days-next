@@ -3,3 +3,5 @@ DAYS_AUTH_TOKEN=
 # Optional: needed only by `bun run sync`, not by page rendering.
 # GITHUB_TOKEN=
 # YT_API_KEY=
+# Optional: used by /admin to create, edit, and delete events in VOD.
+# VOD_ADMIN_API_TOKEN=

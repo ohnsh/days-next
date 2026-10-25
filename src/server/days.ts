@@ -1,8 +1,8 @@
-import { plainDay, shiftDay, today } from '../lib/dates'
+import { dayBounds, plainDay, shiftDay, today } from '../lib/dates'
 import type { Day } from '../lib/types'
-import { readEvents, readItems } from './database'
+import { readItems } from './database'
 import { daysDatabase, vodBaseUrl } from './runtime'
-import { cameras, coverage } from './vod'
+import { cameras, coverage, eventsForDay, vodEvents, type Recording } from './vod'
 
 export async function getDays(before = shiftDay(today(), 1), limit = 3): Promise<Day[]> {
   plainDay(before)
@@ -12,9 +12,16 @@ export async function getDays(before = shiftDay(today(), 1), limit = 3): Promise
   const db = daysDatabase()
   try {
     const base = vodBaseUrl()
-    const [items, events, cameraResult] = await Promise.all([
+    const firstBounds = dayBounds(first),
+      lastBounds = dayBounds(last)
+    const [items, eventsResult, cameraResult] = await Promise.all([
       readItems(db, first, last),
-      readEvents(db, first, last),
+      vodEvents(base, firstBounds.start, lastBounds.end)
+        .then((data) => ({ data, failed: false }))
+        .catch((error) => {
+          console.error(JSON.stringify({ event: 'vod-events-unavailable', message: String(error) }))
+          return { data: [], failed: true }
+        }),
       cameras(base)
         .then((data) => ({ data, failed: false }))
         .catch((error) => {
@@ -22,18 +29,22 @@ export async function getDays(before = shiftDay(today(), 1), limit = 3): Promise
           return { data: [], failed: true }
         }),
     ])
+    const dayCache = new Map<string, Promise<{ recordings: Recording[] }>>()
     return await Promise.all(
       Array.from({ length: limit }, async (_, index) => {
         const day = shiftDay(last, -index)
-        const vod = await coverage(base, day, cameraResult.data)
+        const vod = await coverage(base, day, cameraResult.data, dayCache)
         return {
           day,
           items: items.filter((i) => i.day === day),
-          events: events.filter((e) => e.day === day),
+          events: eventsForDay(eventsResult.data, day),
           cameras: vod.cameras,
-          warnings: cameraResult.failed
-            ? ['VOD is temporarily unavailable. Other sources are shown below.']
-            : vod.warnings,
+          warnings: [
+            ...(cameraResult.failed
+              ? ['VOD is temporarily unavailable. Other sources are shown below.']
+              : vod.warnings),
+            ...(eventsResult.failed ? ['VOD events are temporarily unavailable.'] : []),
+          ],
         }
       })
     )

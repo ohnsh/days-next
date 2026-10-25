@@ -1,0 +1,33 @@
+---
+import { render } from 'astro:content'
+import type { CollectionEntry } from 'astro:content'
+import { postUrl } from '../lib/posts'
+import PostBody from './PostBody.astro'
+
+interface Props {
+  post: CollectionEntry<'posts'>
+  mode?: 'full' | 'excerpt'
+  titleLevel?: 1 | 2 | 3 | 4
+}
+
+const { post, mode = 'full', titleLevel = 1 } = Astro.props
+const Title = `h${titleLevel}` as 'h1' | 'h2' | 'h3' | 'h4'
+const { Content } = await render(post)
+---
+
+<article class:list={['post', { 'post-excerpt': mode === 'excerpt' }]}>
+  <header class="post-heading">
+    <p class="eyebrow"><time datetime={post.data.day}>{post.data.day}</time></p>
+    <Title>
+      {mode === 'excerpt' ? <a href={postUrl(post)}>{post.data.title}</a> : post.data.title}
+    </Title>
+    {post.data.tags?.length ? (
+      <div class="tags post-tags" aria-label="Post tags">
+        {post.data.tags.map((tag) => <span>{tag}</span>)}
+      </div>
+    ) : null}
+  </header>
+  <PostBody post={post} mode={mode} titleLevel={titleLevel}>
+    <Content />
+  </PostBody>
+</article>
