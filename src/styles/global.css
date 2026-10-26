@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 @import '@srcery-colors/srcery-palette/srcery.css';
 :root {
   color-scheme: dark;
@@ -87,26 +87,47 @@ h4 {
 img {
   max-width: 100%;
 }
-.site-header,
 main,
 .site-footer {
   width: min(1120px, calc(100% - 64px));
   margin: auto;
 }
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.header-inner {
+  width: min(1120px, calc(100% - 64px));
+  margin: auto;
+  min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 26px 0;
-  border-bottom: 1px solid var(--line);
+  gap: 24px;
+}
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
 }
 .wordmark {
-  font:
-    52px/0.9 'Instrument Serif',
-    Georgia,
-    serif;
-  letter-spacing: -2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 1.65rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   text-decoration: none;
+}
+.wordmark svg {
+  flex: none;
 }
 .wordmark span {
   color: var(--accent);
@@ -115,6 +136,38 @@ main,
   display: flex;
   gap: 28px;
   font-size: 0.85rem;
+}
+.site-header days-calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cal-picker {
+  margin: 0;
+}
+.cal-picker input {
+  width: 150px;
+  padding: 0.4rem 0.5rem;
+  color-scheme: dark;
+}
+.cal-step,
+.cal-today {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  text-decoration: none;
+}
+.cal-step {
+  width: 34px;
+  font-size: 1rem;
+}
+.cal-today {
+  padding: 0 9px;
+  color: var(--accent);
+  font-size: 0.75rem;
 }
 .site-header nav a {
   text-decoration: none;
@@ -567,14 +620,40 @@ days-youtube iframe {
   align-items: center;
 }
 @media (max-width: 700px) {
-  .site-header,
   main,
   .site-footer {
     width: calc(100% - 32px);
   }
+  .header-inner {
+    width: calc(100% - 32px);
+    min-height: 0;
+    display: grid;
+    gap: 10px;
+    padding: 10px 0;
+  }
+  .header-top {
+    width: 100%;
+    gap: 12px;
+  }
+  .wordmark {
+    gap: 0.4rem;
+    font-size: 1.35rem;
+  }
+  .wordmark svg {
+    width: 22px;
+    height: 22px;
+  }
   .site-header nav {
-    gap: 16px;
+    gap: 14px;
     font-size: 0.75rem;
+  }
+  .site-header days-calendar-nav {
+    justify-self: start;
+  }
+  .cal-picker input {
+    width: 145px;
+    min-height: 34px;
+    font-size: 0.8rem;
   }
   .intro {
     padding: 48px 0 36px;

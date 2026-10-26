@@ -24,7 +24,7 @@ if (Astro.cache.enabled) {
 }
 ---
 
-<Layout title={dayTitle(key)}>
+<Layout title={dayTitle(key)} activeDay={key}>
   <div class="page-intro">
     <a href="/">← All days</a>
     <p class="eyebrow">One day in the archive · Central time</p>

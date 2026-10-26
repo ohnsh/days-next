@@ -31,7 +31,7 @@ const { events, tags, cameras } = vodResult.data
 const warning = vodResult.error || vodResult.data.warning
 ---
 
-<Layout title="Administration">
+<Layout title="Administration" activeDay={selected}>
   <section class="page-intro">
     <h1>Days Admin</h1>
     <p class="muted">

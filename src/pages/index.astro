@@ -32,7 +32,7 @@ if (Astro.cache.enabled) {
 const older = entries?.at(-1)?.id
 ---
 
-<Layout>
+<Layout activeDay={entries?.[0]?.id || shiftDay(before, -1)}>
   <section class="intro">
     <h1>Latest</h1>
   </section>

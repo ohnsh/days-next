@@ -24,7 +24,7 @@ if (Astro.cache.enabled) {
 }
 ---
 
-<Layout title={post.data.title}>
+<Layout title={post.data.title} activeDay={post.data.day}>
   <div class="page-intro">
     <a href={dayUrl(post.data.day)}>← Back to {post.data.day}</a>
     <p class="eyebrow">A post from the archive</p>
