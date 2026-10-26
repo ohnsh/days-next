@@ -77,12 +77,15 @@ services are independent of Astro and reused by administration. Source failures 
 from empty days: VOD outages display a notice, while database failures return a 503 rather than an
 empty archive.
 
-Successful public pages use Astro's Cloudflare route cache: 60 seconds fresh, with up to 15 seconds
-stale-while-revalidate. The adapter enables Workers Caching in the generated deployment config;
-cache hits skip rendering and all its database/API requests. Browser responses require revalidation.
-The small cache-provider wrapper sets `stale-if-error=0` so failures cannot extend cached content
-indefinitely. Admin responses and degraded pages use `no-store` and do not opt into route caching.
-Cache storage is platform-managed; no KV binding or in-process query cache is used.
+Successful public pages use Astro's Cloudflare route cache. Recent days (within the last 7 days)
+are cached for 60 seconds, with up to 15 seconds stale-while-revalidate. Historical day pages and
+posts, and feeds containing only historical days, are cached for 7 days with 1 day
+stale-while-revalidate. A feed containing any recent day keeps the short TTL. The adapter enables
+Workers Caching in the generated deployment config; cache hits skip rendering and all its
+database/API requests. Browser responses require revalidation. The small cache-provider wrapper
+sets `stale-if-error=0` so failures cannot extend cached content indefinitely. Admin responses and
+degraded pages use `no-store` and do not opt into route caching. Cache storage is platform-managed;
+no KV binding or in-process query cache is used.
 
 Pages carry a `days` tag and `day:YYYY-MM-DD` tags for every represented day, so a per-day purge
 also clears feeds containing that day. Successful editorial writes purge `days` (including the old
@@ -121,16 +124,21 @@ containing it. Local builds validate headers/configuration, not Cloudflare's dis
 
 ```sh
 bun run db:seed /path/to/old-days/.days
-bun run sync                    # both sources
+bun run sync                    # incremental, both sources
 bun run sync github
 bun run sync youtube
+bun run sync --full             # full reconciliation of both sources
+bun run sync github --full
+bun run sync:full                # alias for full reconciliation
 ```
 
-Importing replaces a complete source snapshot atomically. Failed fetches do not publish a partial
-source. GitHub uses ETag conditional requests cached under `.data/`; full reconciliation handles
-amendments, removals, and changed repository visibility. YouTube currently refreshes its complete
-uploads/Shorts playlists so updated titles and removed entries are reconciled. These are explicit
-CLI jobs, not page-request work or a configured scheduled job.
+Routine syncs are incremental: GitHub checks recently pushed public repositories and commits since
+the last successful run, while YouTube scans new uploads and only the relevant portion of Shorts.
+They write only changed/new items and never remove older entries. First syncs and explicit `--full`
+syncs reconcile complete source snapshots, removing entries that are no longer present while
+leaving unchanged database rows untouched. Explicit full GitHub syncs bypass the `.data/` ETag cache
+so amended commits and visibility changes are fetched fresh. Failed fetches do not publish partial
+source updates. These are explicit CLI jobs, not page-request work or a configured scheduled job.
 
 GitHub imports only public repositories and retains the original author-matching rules. IDs include
 repository identity and SHA. YouTube preserves title-based day assignment, emoji/description tags,

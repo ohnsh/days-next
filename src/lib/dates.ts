@@ -18,6 +18,14 @@ export function dayFromInstant(value: string | number, timezone = TIMEZONE) {
 export function today() {
   return dayFromInstant(Date.now())
 }
+export function dayCachePolicy(days: string | string[], now = today()) {
+  const list = Array.isArray(days) ? days : [days]
+  const recentCutoff = shiftDay(now, -7)
+  const isHistorical = list.length > 0 && list.every((d) => plainDay(d) < recentCutoff)
+  return isHistorical
+    ? { maxAge: 604800, swr: 86400 }
+    : { maxAge: 60, swr: 15 }
+}
 export function dayBounds(day: string, timezone = TIMEZONE) {
   const date = Temporal.PlainDate.from(plainDay(day))
   return {

@@ -2,7 +2,7 @@
 import { getEntry } from 'astro:content'
 import Layout from '../../layouts/Layout.astro'
 import Post from '../../components/Post.astro'
-import { dayUrl } from '../../lib/dates'
+import { dayCachePolicy, dayUrl } from '../../lib/dates'
 const slug = Astro.params.slug
 const post = slug ? await getEntry('posts', slug) : undefined
 
@@ -17,7 +17,9 @@ Astro.response.headers.set(
 )
 if (Astro.cache.enabled) {
   Astro.cache.set(
-    cacheable ? { maxAge: 60, swr: 15, tags: ['days', `day:${post.data.day}`] } : false
+    cacheable
+      ? { ...dayCachePolicy(post.data.day), tags: ['days', `day:${post.data.day}`] }
+      : false
   )
 }
 ---

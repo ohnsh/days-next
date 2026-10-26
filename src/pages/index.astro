@@ -2,7 +2,7 @@
 import { getLiveCollection } from 'astro:content'
 import Layout from '../layouts/Layout.astro'
 import DayContent from '../components/DayContent.astro'
-import { plainDay, shiftDay, today } from '../lib/dates'
+import { dayCachePolicy, plainDay, shiftDay, today } from '../lib/dates'
 let before = Astro.url.searchParams.get('before') || shiftDay(today(), 1)
 try {
   plainDay(before)
@@ -22,7 +22,10 @@ Astro.response.headers.set(
 if (Astro.cache.enabled) {
   Astro.cache.set(
     cacheable
-      ? { maxAge: 60, swr: 15, tags: ['days', ...entries.map((entry) => `day:${entry.id}`)] }
+      ? {
+          ...dayCachePolicy(entries.map((entry) => entry.id)),
+          tags: ['days', ...entries.map((entry) => `day:${entry.id}`)],
+        }
       : false
   )
 }

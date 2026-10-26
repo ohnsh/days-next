@@ -2,7 +2,7 @@
 import { getLiveEntry } from 'astro:content'
 import Layout from '../../../layouts/Layout.astro'
 import DayContent from '../../../components/DayContent.astro'
-import { dayTitle, dayUrl, plainDay, shiftDay } from '../../../lib/dates'
+import { dayCachePolicy, dayTitle, dayUrl, plainDay, shiftDay } from '../../../lib/dates'
 const key = `${Astro.params.year}-${Astro.params.month}-${Astro.params.day}`
 try {
   plainDay(key)
@@ -20,7 +20,7 @@ Astro.response.headers.set(
   cacheable ? 'public, max-age=0, must-revalidate' : 'no-store'
 )
 if (Astro.cache.enabled) {
-  Astro.cache.set(cacheable ? { maxAge: 60, swr: 15, tags: ['days', `day:${key}`] } : false)
+  Astro.cache.set(cacheable ? { ...dayCachePolicy(key), tags: ['days', `day:${key}`] } : false)
 }
 ---
 

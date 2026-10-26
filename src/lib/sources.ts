@@ -6,6 +6,7 @@ export interface GithubRepo {
   full_name: string
   private: boolean
   commits_url: string
+  pushed_at?: string
 }
 export interface GithubCommit {
   sha: string
