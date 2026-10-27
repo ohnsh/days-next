@@ -1,12 +1,21 @@
-import { dayBounds, dayFromInstant, shiftDay } from '../lib/dates'
-import type { CameraCoverage, EditorialEvent, EventTag } from '../lib/types'
+import { TIMEZONE, dayBounds, dayFromInstant, shiftDay } from '../lib/dates'
+import type {
+  CameraCoverage,
+  DayTranscripts,
+  EditorialEvent,
+  EventTag,
+  SourceTranscript,
+  TranscriptSegment,
+} from '../lib/types'
 
-interface Camera {
+export interface Camera {
   id: string
   name: string
   timezone: string
   first: number
   last: number
+  sourceIds?: string[]
+  audioSourceIds?: string[]
 }
 export interface Recording {
   id: string
@@ -14,10 +23,25 @@ export interface Recording {
   end: number
   posterUrl: string | null
 }
+export interface VodDayTranscriptData {
+  cameraId: string
+  name: string
+  day: string
+  timezone: string
+  start: number
+  end: number
+  segments: TranscriptSegment[]
+}
+
+class VodHttpError extends Error {
+  constructor(public status: number) {
+    super(`VOD responded ${status}`)
+  }
+}
 
 async function json<T>(base: string, path: string): Promise<T> {
   const response = await fetch(new URL(path, base), { signal: AbortSignal.timeout(15000) })
-  if (!response.ok) throw new Error(`VOD responded ${response.status}`)
+  if (!response.ok) throw new VodHttpError(response.status)
   return response.json() as Promise<T>
 }
 export const cameras = (base: string) => json<Camera[]>(base, '/api/cameras')
@@ -139,4 +163,103 @@ export async function coverage(
       })
   )
   return { cameras: results.filter((c): c is CameraCoverage => c !== null), warnings }
+}
+
+export async function dayTranscripts(
+  base: string,
+  day: string,
+  sourceFilter?: string | null
+): Promise<DayTranscripts> {
+  const { start, end } = dayBounds(day)
+  const available = await cameras(base)
+  const filter = sourceFilter?.trim() || null
+  const candidates = new Map<
+    string,
+    { id: string; name: string; timezone: string; optional?: boolean }
+  >()
+  for (const c of available) {
+    if (c.first < end && c.last > start) {
+      candidates.set(c.id, { id: c.id, name: c.name, timezone: c.timezone })
+    }
+  }
+  for (const { id, timezone } of available.flatMap((c) =>
+    (c.audioSourceIds ?? []).map((audioId) => ({ id: audioId, timezone: c.timezone }))
+  )) {
+    if (!candidates.has(id)) {
+      candidates.set(id, { id, name: id, timezone })
+    }
+  }
+  if (filter && !candidates.has(filter)) {
+    candidates.set(filter, { id: filter, name: filter, timezone: TIMEZONE, optional: true })
+  }
+
+  const warnings: string[] = []
+  const results = await Promise.all(
+    [...candidates.values()].map(async (candidate) => {
+      try {
+        const localFirst = dayFromInstant(start, candidate.timezone)
+        const localLast = dayFromInstant(end - 1, candidate.timezone)
+        const dates: string[] = []
+        for (let d = localFirst; d <= localLast; d = shiftDay(d, 1)) dates.push(d)
+        const responses = await Promise.all(
+          dates.map((d) =>
+            json<VodDayTranscriptData>(
+              base,
+              `/api/cameras/${encodeURIComponent(candidate.id)}/transcript?date=${d}`
+            )
+          )
+        )
+        const segments = [
+          ...new Map(
+            responses
+              .flatMap((r) => r.segments)
+              .filter((s) => s.endUtcMs > start && s.startUtcMs < end)
+              .map((s) => [`${s.recordingId}:${s.segmentIndex}`, s])
+          ).values(),
+        ].sort(
+          (a, b) =>
+            a.startUtcMs - b.startUtcMs ||
+            a.recordingId.localeCompare(b.recordingId) ||
+            a.segmentIndex - b.segmentIndex
+        )
+        if (!segments.length) return null
+        const name = responses.find((r) => r.name)?.name || candidate.name
+        return {
+          id: candidate.id,
+          name,
+          segments,
+        } satisfies SourceTranscript
+      } catch (error) {
+        if (candidate.optional && error instanceof VodHttpError && error.status === 404) {
+          return null
+        }
+        console.error(
+          JSON.stringify({
+            event: 'vod-transcript-failed',
+            camera: candidate.id,
+            day,
+            message: String(error),
+          })
+        )
+        warnings.push(`Transcript for ${candidate.name} is temporarily unavailable.`)
+        return null
+      }
+    })
+  )
+
+  const allSources = results.filter((s): s is SourceTranscript => s !== null)
+  const availableSources = allSources.map((s) => ({
+    id: s.id,
+    name: s.name,
+    count: s.segments.length,
+  }))
+  const activeSource = filter
+  const sources = activeSource ? allSources.filter((s) => s.id === activeSource) : allSources
+  return {
+    day,
+    sources,
+    availableSources,
+    activeSource,
+    warnings,
+  }
 }

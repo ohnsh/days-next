@@ -49,3 +49,26 @@ export interface Day {
   cameras: CameraCoverage[]
   warnings: string[]
 }
+export interface TranscriptSegment {
+  recordingId: string
+  sourceCameraId: string
+  segmentIndex: number
+  startMs: number
+  endMs: number
+  startUtcMs: number
+  endUtcMs: number
+  text: string
+  playbackUrl: string
+}
+export interface SourceTranscript {
+  id: string
+  name: string
+  segments: TranscriptSegment[]
+}
+export interface DayTranscripts {
+  day: string
+  sources: SourceTranscript[]
+  availableSources: { id: string; name: string; count: number }[]
+  activeSource: string | null
+  warnings: string[]
+}

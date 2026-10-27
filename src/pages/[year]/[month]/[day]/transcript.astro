@@ -1,0 +1,142 @@
+---
+import Layout from '../../../../layouts/Layout.astro'
+import {
+  dayCachePolicy,
+  dayTitle,
+  dayUrl,
+  plainDay,
+  shiftDay,
+  timeOfDay,
+} from '../../../../lib/dates'
+import type { DayTranscripts } from '../../../../lib/types'
+import { vodBaseUrl } from '../../../../server/runtime'
+import { dayTranscripts } from '../../../../server/vod'
+
+const key = `${Astro.params.year}-${Astro.params.month}-${Astro.params.day}`
+try {
+  plainDay(key)
+} catch {
+  return new Response('Day not found', { status: 404 })
+}
+
+const sourceParam = Astro.url.searchParams.get('source')?.trim() || null
+let transcript: DayTranscripts | null = null
+let error: Error | null = null
+try {
+  transcript = await dayTranscripts(vodBaseUrl(), key, sourceParam)
+} catch (err) {
+  error = err instanceof Error ? err : new Error(String(err))
+  console.error(JSON.stringify({ event: 'transcript-error', day: key, message: error.message }))
+  Astro.response.status = 503
+}
+
+const cacheable = !error && !!transcript && !transcript.warnings.length
+Astro.response.headers.set(
+  'Cache-Control',
+  cacheable ? 'public, max-age=0, must-revalidate' : 'no-store'
+)
+if (Astro.cache.enabled) {
+  Astro.cache.set(cacheable ? { ...dayCachePolicy(key), tags: ['days', `day:${key}`] } : false)
+}
+
+const activeSource = transcript?.activeSource ?? sourceParam
+const sourceSuffix = activeSource ? `?source=${encodeURIComponent(activeSource)}` : ''
+const totalSegments = transcript
+  ? transcript.sources.reduce((sum, s) => sum + s.segments.length, 0)
+  : 0
+const allSegmentsCount = transcript
+  ? transcript.availableSources.reduce((sum, s) => sum + s.count, 0)
+  : 0
+const summary =
+  transcript && totalSegments > 0
+    ? `${totalSegments.toLocaleString()} segment${totalSegments === 1 ? '' : 's'} · ${transcript.sources.length} source${transcript.sources.length === 1 ? '' : 's'}`
+    : 'No segments'
+---
+
+<Layout title={`Transcript · ${dayTitle(key)}`} activeDay={key}>
+  <div class="page-intro">
+    <a href={dayUrl(key)}>← {dayTitle(key)}</a>
+    <p class="eyebrow">Day transcript · Central time</p>
+  </div>
+  {error ? (
+    <p class="notice">This transcript is temporarily unavailable. Please try again shortly.</p>
+  ) : (
+    transcript && (
+      <article class="day-card">
+        <header class="day-heading">
+          <div>
+            <p class="eyebrow">
+              <time datetime={key}>{key}</time>
+            </p>
+            <h1>Transcript</h1>
+          </div>
+          <span class="day-count">{summary}</span>
+        </header>
+
+        {(transcript.availableSources.length > 0 || transcript.activeSource) && (
+          <nav class="transcript-filters" aria-label="Transcript sources">
+            <a
+              href={`${dayUrl(key)}transcript`}
+              class:list={['transcript-filter', { active: !transcript.activeSource }]}
+              aria-current={!transcript.activeSource ? 'page' : undefined}
+            >
+              <span>All sources</span>
+              <span class="pill">{allSegmentsCount}</span>
+            </a>
+            {transcript.availableSources.map((source) => (
+              <a
+                href={`${dayUrl(key)}transcript?source=${encodeURIComponent(source.id)}`}
+                class:list={['transcript-filter', { active: transcript.activeSource === source.id }]}
+                aria-current={transcript.activeSource === source.id ? 'page' : undefined}
+              >
+                <span>{source.name}</span>
+                <span class="pill">{source.count}</span>
+              </a>
+            ))}
+          </nav>
+        )}
+
+        {transcript.warnings.map((warning) => (
+          <p class="notice" role="status">
+            {warning}
+          </p>
+        ))}
+
+        {transcript.sources.map((source) => (
+          <section class="day-section transcript-source" id={`source-${source.id}`}>
+            <h3>
+              <span class="section-dot"></span>
+              {source.name}{' '}
+              <span class="section-meta">
+                {source.segments.length} segments
+              </span>
+            </h3>
+            <ol class="transcript-list">
+              {source.segments.map((segment) => (
+                <li class="transcript-item">
+                  <a class="transcript-time" href={segment.playbackUrl}>
+                    <time datetime={new Date(segment.startUtcMs).toISOString()}>
+                      {timeOfDay(segment.startUtcMs)}
+                    </time>
+                  </a>
+                  <span class="transcript-text">{segment.text}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))}
+
+        {transcript.sources.length === 0 && !transcript.warnings.length && (
+          <p class="empty">
+            No transcript segments recorded for this day
+            {transcript.activeSource ? ` (${transcript.activeSource})` : ''}.
+          </p>
+        )}
+      </article>
+    )
+  )}
+  <nav class="pagination" aria-label="Day navigation">
+    <a href={`${dayUrl(shiftDay(key, -1))}transcript${sourceSuffix}`}>← Previous day</a>
+    <a href={`${dayUrl(shiftDay(key, 1))}transcript${sourceSuffix}`}>Next day →</a>
+  </nav>
+</Layout>

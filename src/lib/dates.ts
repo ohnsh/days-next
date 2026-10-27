@@ -37,3 +37,9 @@ export const dayUrl = (day: string) => `/${plainDay(day).replaceAll('-', '/')}/`
 export function dayTitle(day: string) {
   return Temporal.PlainDate.from(plainDay(day)).toLocaleString('en-US', { dateStyle: 'full' })
 }
+export function timeOfDay(value: number, timezone = TIMEZONE) {
+  return Temporal.Instant.fromEpochMilliseconds(value)
+    .toZonedDateTimeISO(timezone)
+    .toPlainTime()
+    .toString({ smallestUnit: 'second' })
+}

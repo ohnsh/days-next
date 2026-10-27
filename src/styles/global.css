@@ -236,6 +236,7 @@ main,
 .day-heading .eyebrow {
   margin-bottom: 9px;
 }
+.day-heading h1,
 .day-heading h2 {
   font-size: clamp(24px, 3.5vw, 34px);
   line-height: 1.2;
@@ -243,6 +244,7 @@ main,
   letter-spacing: -0.025em;
   margin: 0;
 }
+.day-heading h1 a,
 .day-heading h2 a {
   text-decoration: none;
 }
@@ -618,6 +620,69 @@ days-youtube iframe {
   display: inline-flex;
   gap: 8px;
   align-items: center;
+}
+.transcript-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.transcript-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  font-size: 0.8rem;
+  text-decoration: none;
+  color: var(--muted);
+}
+.transcript-filter:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.transcript-filter.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.transcript-filter .pill {
+  margin-left: 2px;
+}
+.transcript-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+}
+.transcript-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: baseline;
+  padding: 11px 16px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+.transcript-item + .transcript-item {
+  border-top: 1px solid var(--line);
+}
+.transcript-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.76rem;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.transcript-time:hover {
+  text-decoration: underline;
+}
+.transcript-text {
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 @media (max-width: 700px) {
   main,
