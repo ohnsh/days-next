@@ -4,6 +4,7 @@ dist/
 .wrangler/
 .dev.vars
 .env
+.env.*
 .data/
 worker-configuration.d.ts
 .worktrees/
