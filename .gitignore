@@ -6,3 +6,4 @@ dist/
 .env
 .data/
 worker-configuration.d.ts
+.worktrees/
