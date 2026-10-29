@@ -5,6 +5,8 @@ dist/
 .dev.vars
 .env
 .env.*
+!.env.example
 .data/
 worker-configuration.d.ts
 .worktrees/
+.DS_Store
