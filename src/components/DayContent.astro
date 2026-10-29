@@ -32,7 +32,7 @@ for (const [, items] of orderedVideoCategories) {
   items.sort((a, b) => a.title.localeCompare(b.title))
 }
 const count = posts.length + day.events.length + day.cameras.length + day.items.length
-const summary = [
+/*const summary = [
   { amount: posts.length, label: 'post' },
   { amount: day.cameras.length, label: 'camera' },
   { amount: day.events.length, label: 'event' },
@@ -40,22 +40,17 @@ const summary = [
 ]
   .filter(({ amount }) => amount > 0)
   .map(({ amount, label }) => `${amount} ${label}${amount === 1 ? '' : 's'}`)
-  .join(' · ')
+  .join(' · ')*/
 ---
 
 <article class="day-card">
   <header class="day-heading">
     <div>
-      <p class="eyebrow">
-        <time datetime={day.day}>{day.day}</time>
-      </p>
       <h2>
         <a href={dayUrl(day.day)}>{dayTitle(day.day)}</a>
       </h2>
     </div>
-    <span class="day-count">
-      {count ? summary : 'An open page'}
-    </span>
+    <!-- <span class="day-count">{count ? summary : 'An open page'}</span> -->
   </header>
   {day.warnings.map((warning) => (
     <p class="notice" role="status">
@@ -64,8 +59,12 @@ const summary = [
   ))}
   {posts.length > 0 && (
     <section class="day-section writing-section">
-      <h3><span class="section-dot green"></span>Writing</h3>
-      {posts.map((post) => <Post post={post} mode="excerpt" titleLevel={3} />)}
+      <h3>
+        <span class="section-dot green"></span>Writing
+      </h3>
+      {posts.map((post) => (
+        <Post post={post} mode="excerpt" titleLevel={3} />
+      ))}
     </section>
   )}
   {day.events.length > 0 && (
@@ -96,8 +95,7 @@ const summary = [
   {day.cameras.length > 0 && (
     <section class="day-section">
       <h3>
-        <span class="section-dot"></span>Recorded{' '}
-        <span class="section-meta">The day's available footage</span>
+        <span class="section-dot"></span>VOD{' '}
       </h3>
       <div class="media-grid">
         {day.cameras.map((camera) => (
@@ -113,10 +111,7 @@ const summary = [
             />
             <div class="media-caption">
               <h4>{camera.name}</h4>
-              <span>
-                {Math.round(camera.coveredMs / 60000).toLocaleString()} min · {camera.count}{' '}
-                recordings
-              </span>
+              <span>{Math.round(camera.coveredMs / 60000).toLocaleString()} min</span>
             </div>
           </article>
         ))}
@@ -131,9 +126,11 @@ const summary = [
       </h3>
       {orderedVideoCategories.map(([category, items]) => (
         <div class="video-category">
-          <h4>{category || 'Other videos'}</h4>
+          {!category && <h4>Other videos</h4>}
           <div class="media-grid">
-            {items.map((item) => <YouTube {item} />)}
+            {items.map((item) => (
+              <YouTube {item} />
+            ))}
           </div>
         </div>
       ))}
@@ -142,7 +139,7 @@ const summary = [
   {commits.length > 0 && (
     <section class="day-section">
       <h3>
-        <span class="section-dot green"></span>Made & changed{' '}
+        <span class="section-dot green"></span>GitHub commits{' '}
         <span class="section-meta">{commits.length} commits</span>
       </h3>
       <div class="repo-list">

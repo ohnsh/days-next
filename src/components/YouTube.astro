@@ -25,9 +25,6 @@ const videoId = item.id.replace(/^youtube:/, '')
   <h4>
     <a href={item.url}>{item.title}</a>
   </h4>
-  <p class="muted">
-    {item.isShort ? 'Short' : 'Video'} {item.tags.length > 0 && `· ${item.tags.join(' ')}`}
-  </p>
   {item.description && (
     <details>
       <summary>Description</summary>
