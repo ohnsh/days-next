@@ -166,7 +166,11 @@ const warning = vodResult.error || vodResult.data.warning
   const form = document.querySelector<HTMLFormElement>('#event-form')!
   const status = document.querySelector<HTMLElement>('#status')!
   const input = (name: string) => form.elements.namedItem(name) as HTMLInputElement
-  const select = (name: string) => form.elements.namedItem(name) as HTMLSelectElement
+  const select = (name: string) => {
+    const element = form.elements.namedItem(name)
+    if (!(element instanceof HTMLSelectElement)) throw new Error(`Missing select: ${name}`)
+    return element
+  }
   const toEpoch = (value: string) =>
     Temporal.PlainDateTime.from(value).toZonedDateTime(timezone, { disambiguation: 'reject' })
       .epochMilliseconds

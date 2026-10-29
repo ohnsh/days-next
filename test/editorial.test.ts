@@ -1,7 +1,8 @@
 import { expect, test } from 'bun:test'
+import { rejects } from 'node:assert/strict'
 import { dayBounds } from '../src/lib/dates'
 import type { EditorialEvent } from '../src/lib/types'
-import { eventInput } from '../src/server/editorial'
+import { ConflictError, deleteEvent, eventInput, readAdminState } from '../src/server/editorial'
 import { coverage, eventsForDay } from '../src/server/vod'
 
 const input = () => ({
@@ -41,6 +42,99 @@ test('eventInput validates title, interval, scope, cameras, tags, and flags', ()
   expect(() => eventInput({ ...input(), isPublic: 1 })).toThrow('Invalid visibility')
   expect(() => eventInput({ ...input(), version: -1 })).toThrow('Invalid version')
   expect(() => eventInput({ ...input(), version: 1.5 })).toThrow('Invalid version')
+})
+
+test('admin reads report Cloudflare Access redirects instead of a map TypeError', async () => {
+  const originalFetch = globalThis.fetch
+  const requests: RequestInit[] = []
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    requests.push(init!)
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: 'https://example.cloudflareaccess.com/cdn-cgi/access/login/vod.example',
+      },
+    })
+  }) as typeof fetch
+  try {
+    await rejects(
+      readAdminState(0, 1000, 'https://vod.example', 'test-token'),
+      /VOD admin API is blocked by Cloudflare Access/
+    )
+    expect(requests).toHaveLength(3)
+    expect(requests.every((init) => init.redirect === 'manual')).toBe(true)
+    expect(
+      requests.every(
+        (init) => new Headers(init.headers).get('Authorization') === 'Bearer test-token'
+      )
+    ).toBe(true)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('admin reads reject successful HTML and empty responses with a useful error', async () => {
+  const originalFetch = globalThis.fetch
+  try {
+    for (const body of ['<!DOCTYPE html><title>Sign in</title>', '']) {
+      globalThis.fetch = (async (_input: RequestInfo | URL) => new Response(body)) as typeof fetch
+      await rejects(
+        readAdminState(0, 1000, 'https://vod.example', 'test-token'),
+        /returned an invalid JSON response/
+      )
+    }
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('admin reads still load valid VOD API data', async () => {
+  const originalFetch = globalThis.fetch
+  const event = {
+    ...input(),
+    id: 'event-1',
+    tags: [{ id: 'tag-1', name: 'home', isPublic: true, version: 1 }],
+  }
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const path = new URL(String(input)).pathname
+    return Response.json(
+      path.endsWith('/events')
+        ? [event]
+        : path.endsWith('/tags')
+          ? event.tags
+          : [{ id: 'home', name: 'Home' }]
+    )
+  }) as typeof fetch
+  try {
+    const state = await readAdminState(0, 1000, 'https://vod.example', 'test-token')
+    expect(state.events).toEqual([
+      { ...event, day: '2026-10-20', camera: '', at: '2026-10-20T17:00:00.000Z' },
+    ])
+    expect(state.tags).toEqual(event.tags)
+    expect(state.cameras).toEqual([{ id: 'home', name: 'Home' }])
+    expect(state.warning).toBeUndefined()
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('event deletion accepts no-content success and preserves conflict errors', async () => {
+  const originalFetch = globalThis.fetch
+  try {
+    globalThis.fetch = (async (_input: RequestInfo | URL) =>
+      new Response(null, { status: 204 })) as typeof fetch
+    expect(
+      await deleteEvent({ id: 'event-1', version: 1 }, 'https://vod.example', 'test-token')
+    ).toBeUndefined()
+    globalThis.fetch = (async (_input: RequestInfo | URL) =>
+      Response.json({ error: 'Event changed' }, { status: 409 })) as typeof fetch
+    await rejects(
+      deleteEvent({ id: 'event-1', version: 1 }, 'https://vod.example', 'test-token'),
+      ConflictError
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })
 
 test('coverage deduplicates camera-local day requests across a shared cache', async () => {

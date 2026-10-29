@@ -162,6 +162,12 @@ workspace sends event changes through `/api/admin/events`, which uses `VOD_ADMIN
 VOD's `/api/admin/events` API. Set that secret locally in `.dev.vars` and in production as a Worker
 secret. Events marked for protection prevent their associated recordings from being pruned by VOD.
 
+If the admin banner reports that VOD is blocked by Cloudflare Access, check the Access application
+covering **VOD's** `/api/admin` and `/api/admin/*` routes. Legacy VOD Access rules can redirect these
+server-to-server requests to an HTML login page before VOD can validate `VOD_ADMIN_API_TOKEN`.
+VOD's bearer-token API must be reachable for editing to work. Days' own production admin routes
+still require Access as described above.
+
 ## Checks
 
 ```sh

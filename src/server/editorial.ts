@@ -100,8 +100,18 @@ async function request<T>(
   const response = await fetch(new URL(path, base), {
     ...init,
     headers,
+    redirect: 'manual',
     signal: AbortSignal.timeout(15000),
   })
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get('Location')
+    const hostname = location ? new URL(location, base).hostname : ''
+    if (hostname.endsWith('.cloudflareaccess.com'))
+      throw new UnavailableError(
+        'VOD admin API is blocked by Cloudflare Access. Update the Access rules for VOD /api/admin/* to allow its bearer-token API authentication.'
+      )
+    throw new UnavailableError(`VOD ${path} redirected instead of returning API data.`)
+  }
   const text = await response.text()
   let result: unknown
   try {
@@ -117,6 +127,8 @@ async function request<T>(
     if (response.status === 409) throw new ConflictError(message)
     throw new Error(message)
   }
+  if (result === undefined && response.status !== 204)
+    throw new UnavailableError(`VOD ${path} returned an invalid JSON response.`)
   return result as T
 }
 
