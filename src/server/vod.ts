@@ -1,4 +1,7 @@
+import { Temporal } from '@js-temporal/polyfill'
 import { TIMEZONE, dayBounds, dayFromInstant, shiftDay } from '../lib/dates'
+import posterOverrides from '../data/poster-overrides.json'
+import { posterOverrideTime } from '../lib/poster-overrides'
 import type {
   CameraCoverage,
   DayTranscripts,
@@ -22,6 +25,42 @@ export interface Recording {
   start: number
   end: number
   posterUrl: string | null
+}
+
+export function recordingPoster(
+  records: Recording[],
+  day: string,
+  now = Date.now(),
+  overrideTime?: string
+) {
+  const localNow = Temporal.Instant.fromEpochMilliseconds(now).toZonedDateTimeISO(TIMEZONE)
+  const posters = records.filter((r) => r.posterUrl).sort((a, b) => a.start - b.start)
+  const first = posters[0]?.posterUrl ?? null
+  if (overrideTime) {
+    const target = Temporal.PlainDate.from(day).toZonedDateTime({
+      timeZone: TIMEZONE,
+      plainTime: overrideTime,
+    }).epochMilliseconds
+    return posters.find((r) => r.start >= target)?.posterUrl ?? posters.at(-1)?.posterUrl ?? null
+  }
+  if (localNow.toPlainDate().toString() !== day) {
+    const noon = Temporal.PlainDate.from(day).toZonedDateTime({
+      timeZone: TIMEZONE,
+      plainTime: '12:00',
+    }).epochMilliseconds
+    return posters.find((r) => r.start >= noon)?.posterUrl ?? first
+  }
+
+  // Use wall-clock boundaries so DST days still change at 3am, 6am, etc.
+  const boundary = localNow.with({
+    hour: Math.floor(localNow.hour / 3) * 3,
+    minute: 0,
+    second: 0,
+    millisecond: 0,
+    microsecond: 0,
+    nanosecond: 0,
+  }).epochMilliseconds
+  return posters.findLast((r) => r.start <= boundary)?.posterUrl ?? first
 }
 export interface VodDayTranscriptData {
   cameraId: string
@@ -144,7 +183,12 @@ export async function coverage(
             name: camera.name,
             count: records.length,
             coveredMs: coveredMilliseconds(records, start, end),
-            poster: records.find((r) => r.posterUrl)?.posterUrl ?? null,
+            poster: recordingPoster(
+              records,
+              day,
+              Date.now(),
+              posterOverrideTime(posterOverrides, day, camera.id)
+            ),
             at: new Date(position).toISOString(),
             playerDay: dayFromInstant(position, camera.timezone),
           } satisfies CameraCoverage
@@ -224,11 +268,7 @@ export async function dayTranscripts(
         )
         if (!segments.length) return null
         const name = responses.find((r) => r.name)?.name || candidate.name
-        return {
-          id: candidate.id,
-          name,
-          segments,
-        } satisfies SourceTranscript
+        return { id: candidate.id, name, segments } satisfies SourceTranscript
       } catch (error) {
         if (candidate.optional && error instanceof VodHttpError && error.status === 404) {
           return null
@@ -255,11 +295,5 @@ export async function dayTranscripts(
   }))
   const activeSource = filter
   const sources = activeSource ? allSources.filter((s) => s.id === activeSource) : allSources
-  return {
-    day,
-    sources,
-    availableSources,
-    activeSource,
-    warnings,
-  }
+  return { day, sources, availableSources, activeSource, warnings }
 }
