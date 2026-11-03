@@ -31,7 +31,7 @@ test('override configuration rejects invalid dates, times, and structure', () =>
     { '2026-11-01': { cameras: { apartment: '12:60' } } },
     { '2026-11-01': { cameras: { '': '12:00' } } },
   ]) {
-    expect(() => validatePosterOverrides(value)).toThrow('poster-overrides.json:')
+    expect(() => validatePosterOverrides(value)).toThrow('poster-overrides.yaml:')
   }
   expect(validatePosterOverrides({})).toEqual({})
 })

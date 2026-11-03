@@ -4,7 +4,7 @@ export type PosterOverrides = Record<string, { time?: string; cameras?: Record<s
 
 export function validatePosterOverrides(value: unknown): PosterOverrides {
   const fail = (path: string, message: string): never => {
-    throw new Error(`poster-overrides.json: ${path} ${message}`)
+    throw new Error(`poster-overrides.yaml: ${path} ${message}`)
   }
   const object = (value: unknown, path: string): Record<string, unknown> => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {

@@ -1,7 +1,8 @@
 import { Temporal } from '@js-temporal/polyfill'
 import { TIMEZONE, dayBounds, dayFromInstant, shiftDay } from '../lib/dates'
-import posterOverrides from '../data/poster-overrides.json'
-import { posterOverrideTime } from '../lib/poster-overrides'
+import posterOverridesYaml from '../data/poster-overrides.yaml?raw'
+import { parse } from 'yaml'
+import { posterOverrideTime, validatePosterOverrides } from '../lib/poster-overrides'
 import type {
   CameraCoverage,
   DayTranscripts,
@@ -10,6 +11,8 @@ import type {
   SourceTranscript,
   TranscriptSegment,
 } from '../lib/types'
+
+const posterOverrides = validatePosterOverrides(parse(posterOverridesYaml))
 
 export interface Camera {
   id: string

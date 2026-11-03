@@ -1,12 +1,15 @@
 # Poster overrides
 
-Edit `poster-overrides.json`, then commit and deploy to change a day's camera posters:
+Edit `poster-overrides.yaml`, then commit and deploy to change a day's camera posters:
 
-```json
-{
-  "2026-11-01": { "time": "14:00", "cameras": { "apartment": "16:30" } },
-  "2026-10-31": { "cameras": { "apartment": "13:15" } }
-}
+```yaml
+"2026-11-01":
+  time: "14:00"
+  cameras:
+    apartment: "16:30"
+"2026-10-31":
+  cameras:
+    apartment: "13:15"
 ```
 
 - Dates match the day pages. All times are 24-hour `HH:mm` in **America/Chicago**.
