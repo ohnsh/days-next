@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config'
 import cloudflare from '@astrojs/cloudflare'
 import { cacheCloudflare } from '@astrojs/cloudflare/cache'
 import mdx from '@astrojs/mdx'
+import react from '@astrojs/react'
 import { readFileSync } from 'node:fs'
 import { parse } from 'yaml'
 import { validatePosterOverrides } from './src/lib/poster-overrides.ts'
@@ -13,7 +14,7 @@ validatePosterOverrides(
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({ imageService: 'compile' }),
-  integrations: [mdx()],
+  integrations: [mdx(), react()],
   cache: {
     provider: {
       ...cacheCloudflare(),

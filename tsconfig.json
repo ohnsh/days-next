@@ -3,10 +3,9 @@
   "include": [".astro/types.d.ts", "**/*"],
   "exclude": ["dist", "node_modules"],
   "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "types": ["bun"],
-    "paths": {
-      "@/*": ["./src/*"],
-      "assets/*": ["./src/content/posts/2026/08/assets/*"]
-    }
+    "paths": { "@/*": ["./src/*"], "assets/*": ["./src/content/posts/2026/08/assets/*"] }
   }
 }

@@ -88,6 +88,26 @@ async function json<T>(base: string, path: string): Promise<T> {
 }
 export const cameras = (base: string) => json<Camera[]>(base, '/api/cameras')
 
+// Use the same cached, indexed monthly availability API as @vod/web.
+export async function vodCalendar(base: string, month: string) {
+  const list = await cameras(base)
+  const calendars = await Promise.all(
+    list.map((camera) =>
+      json<{ month: string; days: Record<string, boolean> }>(
+        base,
+        `/api/cameras/${encodeURIComponent(camera.id)}/calendar?month=${month}`
+      )
+    )
+  )
+  const days: Record<string, boolean> = {}
+  for (const calendar of calendars) {
+    for (const [day, available] of Object.entries(calendar.days)) {
+      if (available) days[day] = true
+    }
+  }
+  return { month, days }
+}
+
 interface ArchiveEvent {
   id: string
   title: string

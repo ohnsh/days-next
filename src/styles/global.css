@@ -196,7 +196,7 @@ main,
   flex: none;
 }
 
-.site-header nav {
+.site-header .header-menu nav {
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
@@ -221,10 +221,9 @@ main,
   margin: 0;
 }
 
-.cal-picker input {
-  width: 150px;
-  padding: 0.4rem 0.5rem;
-  color-scheme: dark;
+.cal-step[aria-disabled='true'] {
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 .cal-step,
@@ -903,12 +902,6 @@ days-youtube iframe {
 
   .cal-step {
     width: 28px;
-  }
-
-  .cal-picker input {
-    width: 128px;
-    min-height: 34px;
-    font-size: 0.8rem;
   }
 
   .intro {
