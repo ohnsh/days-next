@@ -25,9 +25,6 @@ if (Astro.cache.enabled) {
 ---
 
 <Layout title={dayTitle(key)} activeDay={key}>
-  <div class="page-intro">
-    <a href="/">← All days</a>
-  </div>
   {error ? (
     <p class="notice">This day is temporarily unavailable.</p>
   ) : (
