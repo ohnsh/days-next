@@ -115,10 +115,13 @@ export default function CalendarPicker({
           {open && (
             <DayPicker
               mode="single"
+              captionLayout="dropdown"
+              navLayout="after"
               selected={dateOf(activeDay)}
               today={dateOf(today)}
               month={month}
               onMonthChange={setMonth}
+              startMonth={dateOf('2025-01-01')}
               endMonth={dateOf(today)}
               disabled={{ after: dateOf(today) }}
               autoFocus
