@@ -36,14 +36,6 @@ const older = entries?.at(-1)?.id
   <section class="intro">
     <h1>Latest</h1>
   </section>
-  <div class="feed-toolbar">
-    <span>DAYS</span>
-    <form action="/" method="get">
-      <label for="before">Before</label>
-      <input id="before" name="before" type="date" value={before} required />
-      <button type="submit">Go →</button>
-    </form>
-  </div>
   {error ? (
     <section class="notice">
       <h2>Days is temporarily unavailable</h2>

@@ -123,20 +123,61 @@ main,
   width: min(1120px, calc(100% - 64px));
   margin: auto;
   min-height: 76px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
 }
 
-.header-top {
+.header-account {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 28px;
+  justify-self: end;
+  gap: 12px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.header-menu {
+  position: relative;
+}
+
+.header-menu summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 5px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+}
+
+.header-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.header-menu summary:hover,
+.header-menu[open] summary {
+  background: var(--panel);
+  color: var(--accent);
+}
+
+.nav-chevron {
+  width: 9px;
+  height: 9px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.menu-name {
+  display: none;
 }
 
 .wordmark {
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -156,8 +197,17 @@ main,
 }
 
 .site-header nav {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  min-width: 180px;
   display: flex;
-  gap: 28px;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 25%);
   font-size: 0.85rem;
 }
 
@@ -200,11 +250,17 @@ main,
 }
 
 .site-header nav a {
+  padding: 10px 12px;
+  border-radius: 4px;
   text-decoration: none;
 }
 
+.site-header nav a:hover {
+  background: var(--bg);
+}
+
 .intro {
-  padding: 2rem 0 1rem;
+  padding: 1.5rem 0;
   max-width: 650px;
 }
 
@@ -236,35 +292,13 @@ main,
   font-size: 1rem;
 }
 
-.feed-toolbar {
-  border-block: 1px solid var(--line);
-  padding: 16px 0;
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-}
-
-.feed-toolbar form {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  letter-spacing: normal;
-}
-
-.feed-toolbar input {
-  padding: 0.35rem;
-}
-
-.feed-toolbar button {
-  padding: 0.35rem 0.65rem;
-}
-
 .day-card {
   padding: 40px 0 48px;
   border-bottom: 1px solid var(--line);
+
+  &:first-of-type {
+    padding-top: 0;
+  }
 }
 
 .day-heading {
@@ -819,6 +853,26 @@ days-youtube iframe {
   overflow-wrap: anywhere;
 }
 
+@media (max-width: 450px) {
+  .wordmark span {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .header-name {
+    display: none;
+  }
+
+  .menu-name {
+    display: block;
+    padding: 10px 12px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+  }
+}
+
 @media (max-width: 700px) {
 
   main,
@@ -830,13 +884,12 @@ days-youtube iframe {
     width: calc(100% - 32px);
     min-height: 0;
     display: grid;
-    gap: 10px;
+    gap: 8px;
     padding: 10px 0;
   }
 
-  .header-top {
-    width: 100%;
-    gap: 12px;
+  .cal-today {
+    display: none;
   }
 
   .wordmark {
@@ -844,22 +897,16 @@ days-youtube iframe {
     font-size: 1.35rem;
   }
 
-  .wordmark svg {
-    width: 22px;
-    height: 22px;
-  }
-
-  .site-header nav {
-    gap: 14px;
-    font-size: 0.75rem;
-  }
-
   .site-header days-calendar-nav {
-    justify-self: start;
+    gap: 4px;
+  }
+
+  .cal-step {
+    width: 28px;
   }
 
   .cal-picker input {
-    width: 145px;
+    width: 128px;
     min-height: 34px;
     font-size: 0.8rem;
   }
@@ -880,12 +927,6 @@ days-youtube iframe {
   .media-grid,
   .admin-grid {
     grid-template-columns: 1fr;
-  }
-
-  .feed-toolbar {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
   }
 
   .day-card {
