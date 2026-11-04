@@ -1,4 +1,11 @@
 [[language]]
+name = "jsonc"
+
+[language.formatter]
+command = "bunx"
+args = ["--bun", "prettier", "--stdin-filepath", "a.jsonc"]
+
+[[language]]
 name = "typescript"
 language-servers = ["typescript-language-server"]
 

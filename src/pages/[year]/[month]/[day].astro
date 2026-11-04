@@ -27,10 +27,9 @@ if (Astro.cache.enabled) {
 <Layout title={dayTitle(key)} activeDay={key}>
   <div class="page-intro">
     <a href="/">← All days</a>
-    <p class="eyebrow">One day in the archive · Central time</p>
   </div>
   {error ? (
-    <p class="notice">This day is temporarily unavailable. Please try again shortly.</p>
+    <p class="notice">This day is temporarily unavailable.</p>
   ) : (
     entry && <DayContent day={entry.data} expanded />
   )}

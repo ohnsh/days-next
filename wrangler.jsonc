@@ -1,21 +1,16 @@
 {
-    "$schema": "node_modules/wrangler/config-schema.json",
-    "name": "days-next",
-    "routes": [
-        {
-            "pattern": "days-next.ohn.sh",
-            "custom_domain": true,
-        },
-    ],
-    "workers_dev": false,
-    "preview_urls": true,
-    // Latest date supported by the adapter's installed workerd binary.
-    "compatibility_date": "2026-10-19",
-    "compatibility_flags": ["nodejs_compat"],
-    "vars": {
-        "VOD_BASE_URL": "https://vod.ohn.sh",
-        "ACCESS_TEAM_DOMAIN": "https://ohnsh.cloudflareaccess.com",
-        "ACCESS_AUD": "db5b7751f97545620b5d225aaad33ff73e518920bd07904f764a6ab72b85f6c0",
-    },
-    "observability": { "enabled": true, "traces": { "enabled": true, "head_sampling_rate": 0.01 } },
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "days-next",
+  "routes": [{ "pattern": "days-next.ohn.sh", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": true,
+  // Latest date supported by the adapter's installed workerd binary.
+  "compatibility_date": "2026-10-19",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "VOD_BASE_URL": "https://vod.ohn.sh",
+    "ACCESS_TEAM_DOMAIN": "https://ohnsh.cloudflareaccess.com",
+    "ACCESS_AUD": "db5b7751f97545620b5d225aaad33ff73e518920bd07904f764a6ab72b85f6c0",
+  },
+  "observability": { "enabled": true, "traces": { "enabled": true, "head_sampling_rate": 0.01 } },
 }
