@@ -5,14 +5,14 @@ import Post from './Post.astro'
 import { dayTitle, dayUrl } from '../lib/dates'
 import { getPostsForDay } from '../lib/posts'
 import type { Day, SourceItem } from '../lib/types'
-import { isVideoCamera, isDefaultCamera } from '../lib/vod-view'
+import { isDefaultView } from '../lib/vod-view'
 interface Props {
   day: Day
   expanded?: boolean
 }
 const { day, expanded = false } = Astro.props
-const cameras = day.cameras.filter((camera) => isVideoCamera(camera.id))
-const hasDefaultCameras = cameras.some((camera) => isDefaultCamera(camera.id))
+const cameras = day.cameras
+const hasDefaultCameras = cameras.some((camera) => isDefaultView(camera.id))
 const posts = await getPostsForDay(day.day)
 const commits = day.items.filter((i) => i.source === 'github')
 const videos = day.items.filter((i) => i.source === 'youtube')
@@ -112,8 +112,8 @@ const count = posts.length + day.events.length + cameras.length + day.items.leng
         {cameras.map((camera) => (
           <article
             class="camera-card"
-            data-vod-default={String(isDefaultCamera(camera.id))}
-            hidden={!isDefaultCamera(camera.id)}
+            data-vod-default={String(isDefaultView(camera.id))}
+            hidden={!isDefaultView(camera.id)}
           >
             <VodPlayer
               poster={camera.poster || '/poster-placeholder.svg'}

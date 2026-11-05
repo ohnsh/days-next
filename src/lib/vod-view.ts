@@ -1,6 +1,5 @@
-// The cameras API does not currently expose an audio-only media type.
-const audioOnlyIds = new Set(['memo', 'samson'])
+export type MediaType = 'audio' | 'video' | 'audio/video'
 const defaultHiddenIds = new Set(['bedroom'])
 
-export const isVideoCamera = (id: string) => !audioOnlyIds.has(id)
-export const isDefaultCamera = (id: string) => isVideoCamera(id) && !defaultHiddenIds.has(id)
+export const isVideoView = (view: { mediaType: MediaType }) => view.mediaType !== 'audio'
+export const isDefaultView = (id: string) => !defaultHiddenIds.has(id)

@@ -68,7 +68,9 @@ export interface SourceTranscript {
 export interface DayTranscripts {
   day: string
   sources: SourceTranscript[]
-  availableSources: { id: string; name: string; count: number }[]
+  availableSources: { id: string; name: string; count: number; kind: 'view' | 'source' }[]
   activeSource: string | null
+  activeKind: 'view' | 'source'
+  totalCount: number
   warnings: string[]
 }

@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill'
-import { isVideoCamera, isDefaultCamera } from '../lib/vod-view'
+import { isVideoView, isDefaultView, type MediaType } from '../lib/vod-view'
 import { TIMEZONE, dayBounds, dayFromInstant, shiftDay } from '../lib/dates'
 import posterOverridesYaml from '../data/poster-overrides.yaml?raw'
 import { parse } from 'yaml'
@@ -15,7 +15,8 @@ import type {
 
 const posterOverrides = validatePosterOverrides(parse(posterOverridesYaml))
 
-export interface Camera {
+export interface View {
+  mediaType: MediaType
   id: string
   name: string
   timezone: string
@@ -23,6 +24,16 @@ export interface Camera {
   last: number
   sourceIds?: string[]
   audioSourceIds?: string[]
+}
+export interface Source {
+  id: string
+  name: string
+  mediaType: MediaType
+  publish: boolean
+  timezone: string | null
+  first: number | null
+  last: number | null
+  latestReady: number | null
 }
 export interface Recording {
   id: string
@@ -87,16 +98,16 @@ async function json<T>(base: string, path: string): Promise<T> {
   if (!response.ok) throw new VodHttpError(response.status)
   return response.json() as Promise<T>
 }
-export const cameras = (base: string) => json<Camera[]>(base, '/api/cameras')
+export const views = (base: string) => json<View[]>(base, '/api/views')
 
 // Use the same cached, indexed monthly availability API as @vod/web.
 export async function vodCalendar(base: string, month: string) {
-  const list = (await cameras(base)).filter((camera) => isVideoCamera(camera.id))
+  const list = (await views(base)).filter(isVideoView)
   const calendars = await Promise.all(
     list.map((camera) =>
       json<{ month: string; days: Record<string, boolean> }>(
         base,
-        `/api/cameras/${encodeURIComponent(camera.id)}/calendar?month=${month}`
+        `/api/views/${encodeURIComponent(camera.id)}/calendar?month=${month}`
       )
     )
   )
@@ -106,7 +117,7 @@ export async function vodCalendar(base: string, month: string) {
     for (const [day, available] of Object.entries(calendar.days)) {
       if (available) {
         allDays[day] = true
-        if (isDefaultCamera(list[index].id)) days[day] = true
+        if (isDefaultView(list[index].id)) days[day] = true
       }
     }
   }
@@ -168,14 +179,14 @@ export function coveredMilliseconds(
 export async function coverage(
   base: string,
   day: string,
-  available: Camera[],
+  available: View[],
   dayCache?: Map<string, Promise<{ recordings: Recording[] }>>
 ) {
   const { start, end } = dayBounds(day)
   const warnings: string[] = []
   const results = await Promise.all(
     available
-      .filter((c) => isVideoCamera(c.id) && c.first < end && c.last > start)
+      .filter((c) => isVideoView(c) && c.first < end && c.last > start)
       .map(async (camera) => {
         try {
           const localFirst = dayFromInstant(start, camera.timezone)
@@ -189,7 +200,7 @@ export async function coverage(
               if (!response) {
                 response = json<{ recordings: Recording[] }>(
                   base,
-                  `/api/cameras/${encodeURIComponent(camera.id)}/day?date=${d}`
+                  `/api/views/${encodeURIComponent(camera.id)}/day?date=${d}`
                 )
                 dayCache?.set(key, response)
               }
@@ -240,32 +251,48 @@ export async function coverage(
 export async function dayTranscripts(
   base: string,
   day: string,
-  sourceFilter?: string | null
+  sourceFilter?: string | null,
+  filterKind: 'view' | 'source' = 'source'
 ): Promise<DayTranscripts> {
   const { start, end } = dayBounds(day)
-  const available = await cameras(base)
+  const available = await views(base)
   const filter = sourceFilter?.trim() || null
   const candidates = new Map<
     string,
-    { id: string; name: string; timezone: string; optional?: boolean }
+    { id: string; name: string; timezone: string; kind: 'views' | 'sources' }
   >()
   for (const c of available) {
-    if (c.first < end && c.last > start) {
-      candidates.set(c.id, { id: c.id, name: c.name, timezone: c.timezone })
+    // Attached audio can extend beyond the view's primary video coverage.
+    if ((c.first < end && c.last > start) || c.audioSourceIds?.length) {
+      candidates.set(c.id, { id: c.id, name: c.name, timezone: c.timezone, kind: 'views' })
     }
   }
-  for (const { id, timezone } of available.flatMap((c) =>
-    (c.audioSourceIds ?? []).map((audioId) => ({ id: audioId, timezone: c.timezone }))
-  )) {
-    if (!candidates.has(id)) {
-      candidates.set(id, { id, name: id, timezone })
-    }
-  }
-  if (filter && !candidates.has(filter)) {
-    candidates.set(filter, { id: filter, name: filter, timezone: TIMEZONE, optional: true })
-  }
-
   const warnings: string[] = []
+  let activeKind: 'view' | 'source' = 'view'
+  if (filter && filterKind === 'source' && !available.some((view) => view.id === filter)) {
+    activeKind = 'source'
+    const source = (await json<Source[]>(base, '/api/sources')).find((s) => s.id === filter)
+    if (
+      source &&
+      source.first !== null &&
+      source.last !== null &&
+      source.first < end &&
+      source.last > start
+    ) {
+      if (source.timezone === null) {
+        warnings.push(
+          `Transcript for ${source.name} is unavailable because its timezone is unknown.`
+        )
+      } else {
+        candidates.set(source.id, {
+          id: source.id,
+          name: source.name,
+          timezone: source.timezone,
+          kind: 'sources',
+        })
+      }
+    }
+  }
   const results = await Promise.all(
     [...candidates.values()].map(async (candidate) => {
       try {
@@ -277,7 +304,7 @@ export async function dayTranscripts(
           dates.map((d) =>
             json<VodDayTranscriptData>(
               base,
-              `/api/cameras/${encodeURIComponent(candidate.id)}/transcript?date=${d}`
+              `/api/${candidate.kind}/${encodeURIComponent(candidate.id)}/transcript?date=${d}`
             )
           )
         )
@@ -298,9 +325,6 @@ export async function dayTranscripts(
         const name = responses.find((r) => r.name)?.name || candidate.name
         return { id: candidate.id, name, segments } satisfies SourceTranscript
       } catch (error) {
-        if (candidate.optional && error instanceof VodHttpError && error.status === 404) {
-          return null
-        }
         console.error(
           JSON.stringify({
             event: 'vod-transcript-failed',
@@ -316,12 +340,36 @@ export async function dayTranscripts(
   )
 
   const allSources = results.filter((s): s is SourceTranscript => s !== null)
+  // Preserve API view order, independently of request completion order.
+  const seen = new Set<string>()
+  const combined = allSources
+    .filter((s) => candidates.get(s.id)?.kind === 'views')
+    .map((s) => ({
+      ...s,
+      segments: s.segments.filter((segment) => {
+        const key = JSON.stringify([segment.recordingId, segment.segmentIndex])
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      }),
+    }))
   const availableSources = allSources.map((s) => ({
     id: s.id,
     name: s.name,
     count: s.segments.length,
+    kind: candidates.get(s.id)!.kind === 'views' ? ('view' as const) : ('source' as const),
   }))
   const activeSource = filter
-  const sources = activeSource ? allSources.filter((s) => s.id === activeSource) : allSources
-  return { day, sources, availableSources, activeSource, warnings }
+  const sources = activeSource
+    ? allSources.filter((s) => s.id === activeSource)
+    : combined.filter((s) => s.segments.length)
+  return {
+    day,
+    sources,
+    availableSources,
+    activeSource,
+    activeKind,
+    totalCount: seen.size,
+    warnings,
+  }
 }

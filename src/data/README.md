@@ -13,7 +13,7 @@ Edit `poster-overrides.yaml`, then commit and deploy to change a day's camera po
 ```
 
 - Dates match the day pages. All times are 24-hour `HH:mm` in **America/Chicago**.
-- Use camera IDs from the VOD API, not display names.
+- Use view IDs from VOD's `/api/views`, not display names. The YAML key remains `cameras`.
 - A camera time takes priority over the day's `time`. Both fields are optional.
 - Overrides select the first available recording poster at or after the time. If none exists, they
   use the latest earlier poster for that day. They select existing posters, not exact video frames,

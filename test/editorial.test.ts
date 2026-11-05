@@ -102,7 +102,11 @@ test('admin reads still load valid VOD API data', async () => {
         ? [event]
         : path.endsWith('/tags')
           ? event.tags
-          : [{ id: 'home', name: 'Home' }]
+          : path === '/api/admin/views'
+            ? [{ id: 'home', name: 'Home' }]
+            : (() => {
+                throw new Error(`Unexpected endpoint: ${path}`)
+              })()
     )
   }) as typeof fetch
   try {
@@ -147,6 +151,7 @@ test('coverage deduplicates camera-local day requests across a shared cache', as
   try {
     const camera = {
       id: 'tokyo',
+      mediaType: 'video' as const,
       name: 'Tokyo',
       timezone: 'Asia/Tokyo',
       first: 0,
@@ -158,6 +163,7 @@ test('coverage deduplicates camera-local day requests across a shared cache', as
       coverage('https://vod.example', '2026-10-21', [camera], cache),
     ])
     const cameraDays = urls.map((url) => new URL(url).searchParams.get('date'))
+    expect(urls.every((url) => new URL(url).pathname === '/api/views/tokyo/day')).toBe(true)
     expect(cameraDays).toHaveLength(new Set(cameraDays).size)
     expect(cameraDays).toContain('2026-10-21')
   } finally {

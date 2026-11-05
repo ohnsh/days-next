@@ -11,11 +11,15 @@ test('calendar unions availability using monthly camera endpoints only', async (
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(String(input))
     requests.push(url.pathname + url.search)
-    if (url.pathname === '/api/cameras') return Response.json([{ id: 'one' }, { id: 'two' }])
-    if (url.pathname === '/api/cameras/one/calendar') {
+    if (url.pathname === '/api/views')
+      return Response.json([
+        { id: 'one', mediaType: 'video' },
+        { id: 'two', mediaType: 'audio/video' },
+      ])
+    if (url.pathname === '/api/views/one/calendar') {
       return Response.json({ month: '2026-10', days: { '2026-10-01': true, '2026-10-02': false } })
     }
-    if (url.pathname === '/api/cameras/two/calendar') {
+    if (url.pathname === '/api/views/two/calendar') {
       return Response.json({ month: '2026-10', days: { '2026-10-01': false, '2026-10-03': true } })
     }
     throw new Error(`Unexpected request: ${url}`)
@@ -26,22 +30,27 @@ test('calendar unions availability using monthly camera endpoints only', async (
     allDays: { '2026-10-01': true, '2026-10-03': true },
   })
   expect(requests).toEqual([
-    '/api/cameras',
-    '/api/cameras/one/calendar?month=2026-10',
-    '/api/cameras/two/calendar?month=2026-10',
+    '/api/views',
+    '/api/views/one/calendar?month=2026-10',
+    '/api/views/two/calendar?month=2026-10',
   ])
 })
 
 test('views exclude audio entirely and only show bedroom availability in allDays', async () => {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(String(input))
-    if (url.pathname === '/api/cameras') {
-      return Response.json(['apartment', 'bedroom', 'memo', 'samson'].map((id) => ({ id })))
+    if (url.pathname === '/api/views') {
+      return Response.json(
+        ['apartment', 'bedroom', 'new-microphone'].map((id) => ({
+          id,
+          mediaType: id === 'new-microphone' ? 'audio' : 'audio/video',
+        }))
+      )
     }
-    if (url.pathname === '/api/cameras/apartment/calendar') {
+    if (url.pathname === '/api/views/apartment/calendar') {
       return Response.json({ days: { '2026-10-01': true } })
     }
-    if (url.pathname === '/api/cameras/bedroom/calendar') {
+    if (url.pathname === '/api/views/bedroom/calendar') {
       return Response.json({ days: { '2026-10-01': true, '2026-10-02': true } })
     }
     throw new Error(`Audio sources must not be requested: ${url}`)
@@ -55,7 +64,7 @@ test('views exclude audio entirely and only show bedroom availability in allDays
 
 test('calendar failures do not masquerade as days without content', async () => {
   globalThis.fetch = (async (input: RequestInfo | URL) =>
-    new URL(String(input)).pathname === '/api/cameras'
+    new URL(String(input)).pathname === '/api/views'
       ? Response.json([{ id: 'one' }])
       : new Response('Unavailable', { status: 503 })) as typeof fetch
   const error = await vodCalendar('https://vod.example', '2026-10').catch((error: Error) => error)

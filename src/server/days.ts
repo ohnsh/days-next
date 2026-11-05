@@ -2,7 +2,7 @@ import { dayBounds, plainDay, shiftDay, today } from '../lib/dates'
 import type { Day } from '../lib/types'
 import { readItems } from './database'
 import { daysDatabase, vodBaseUrl } from './runtime'
-import { cameras, coverage, eventsForDay, vodEvents, type Recording } from './vod'
+import { views, coverage, eventsForDay, vodEvents, type Recording } from './vod'
 
 export async function getDays(before = shiftDay(today(), 1), limit = 3): Promise<Day[]> {
   plainDay(before)
@@ -22,7 +22,7 @@ export async function getDays(before = shiftDay(today(), 1), limit = 3): Promise
           console.error(JSON.stringify({ event: 'vod-events-unavailable', message: String(error) }))
           return { data: [], failed: true }
         }),
-      cameras(base)
+      views(base)
         .then((data) => ({ data, failed: false }))
         .catch((error) => {
           console.error(JSON.stringify({ event: 'vod-unavailable', message: String(error) }))

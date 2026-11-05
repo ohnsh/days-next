@@ -109,6 +109,21 @@ After deployment, verify repeated requests produce `Cf-Cache-Status: HIT`, verif
 responses bypass caching, and verify a day purge causes a miss on both the day page and a feed
 containing it. Local builds validate headers/configuration, not Cloudflare's distributed cache.
 
+### VOD views and transcripts
+
+Days discovers published views through `/api/views` and uses view day/calendar endpoints.
+Audio-only views (`mediaType: audio`) are excluded from VOD cards and calendar dots;
+`bedroom` is visible only with **Show all**. This browser preference persists across pages.
+Poster overrides use view IDs; the embedded player's `camera` prop also accepts view IDs.
+Admin discovery uses `/api/admin/views` while event payload fields retain their API names.
+
+Transcripts include audio-only views and attached audio supplied by each view endpoint.
+The combined transcript deduplicates `(recordingId, segmentIndex)` across views, retaining
+the first view in API order and its playback link. Individual view counts and selected-view
+transcripts remain complete; the combined count reflects unique segments. New links use
+`?view=`. Legacy `?source=` links resolve published views first, then physical sources via
+`/api/sources`; missing coverage is empty and unknown timezone is reported rather than guessed.
+
 ### Dates
 
 - The site timezone is **America/Chicago**.

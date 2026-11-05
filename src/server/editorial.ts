@@ -154,7 +154,7 @@ export async function readAdminState(
   const [events, tags, cameras] = await Promise.all([
     request<AdminArchiveEvent[]>(base, `/api/${token ? 'admin/' : ''}events?${params}`, token),
     request<EventTag[]>(base, `/api/${token ? 'admin/' : ''}tags`, token),
-    request<{ id: string; name: string }[]>(base, `/api/${token ? 'admin/' : ''}cameras`, token),
+    request<{ id: string; name: string }[]>(base, `/api/${token ? 'admin/' : ''}views`, token),
   ])
   return { events: events.map(mapEvent), tags, cameras, warning }
 }

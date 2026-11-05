@@ -19,11 +19,12 @@ try {
   return new Response('Day not found', { status: 404 })
 }
 
-const sourceParam = Astro.url.searchParams.get('source')?.trim() || null
+const viewParam = Astro.url.searchParams.get('view')?.trim() || null
+const sourceParam = viewParam || Astro.url.searchParams.get('source')?.trim() || null
 let transcript: DayTranscripts | null = null
 let error: Error | null = null
 try {
-  transcript = await dayTranscripts(vodBaseUrl(), key, sourceParam)
+  transcript = await dayTranscripts(vodBaseUrl(), key, sourceParam, viewParam ? 'view' : 'source')
 } catch (err) {
   error = err instanceof Error ? err : new Error(String(err))
   console.error(JSON.stringify({ event: 'transcript-error', day: key, message: error.message }))
@@ -40,16 +41,16 @@ if (Astro.cache.enabled) {
 }
 
 const activeSource = transcript?.activeSource ?? sourceParam
-const sourceSuffix = activeSource ? `?source=${encodeURIComponent(activeSource)}` : ''
+const sourceSuffix = activeSource
+  ? `?${transcript?.activeKind ?? (viewParam ? 'view' : 'source')}=${encodeURIComponent(activeSource)}`
+  : ''
 const totalSegments = transcript
   ? transcript.sources.reduce((sum, s) => sum + s.segments.length, 0)
   : 0
-const allSegmentsCount = transcript
-  ? transcript.availableSources.reduce((sum, s) => sum + s.count, 0)
-  : 0
+const allSegmentsCount = transcript?.totalCount ?? 0
 const summary =
   transcript && totalSegments > 0
-    ? `${totalSegments.toLocaleString()} segment${totalSegments === 1 ? '' : 's'} · ${transcript.sources.length} source${transcript.sources.length === 1 ? '' : 's'}`
+    ? `${totalSegments.toLocaleString()} segment${totalSegments === 1 ? '' : 's'}`
     : 'No segments'
 ---
 
@@ -74,19 +75,22 @@ const summary =
         </header>
 
         {(transcript.availableSources.length > 0 || transcript.activeSource) && (
-          <nav class="transcript-filters" aria-label="Transcript sources">
+          <nav class="transcript-filters" aria-label="Transcript views">
             <a
               href={`${dayUrl(key)}transcript`}
               class:list={['transcript-filter', { active: !transcript.activeSource }]}
               aria-current={!transcript.activeSource ? 'page' : undefined}
             >
-              <span>All sources</span>
+              <span>All views</span>
               <span class="pill">{allSegmentsCount}</span>
             </a>
             {transcript.availableSources.map((source) => (
               <a
-                href={`${dayUrl(key)}transcript?source=${encodeURIComponent(source.id)}`}
-                class:list={['transcript-filter', { active: transcript.activeSource === source.id }]}
+                href={`${dayUrl(key)}transcript?${source.kind}=${encodeURIComponent(source.id)}`}
+                class:list={[
+                  'transcript-filter',
+                  { active: transcript.activeSource === source.id },
+                ]}
                 aria-current={transcript.activeSource === source.id ? 'page' : undefined}
               >
                 <span>{source.name}</span>
@@ -106,10 +110,7 @@ const summary =
           <section class="day-section transcript-source" id={`source-${source.id}`}>
             <h3>
               <span class="section-dot"></span>
-              {source.name}{' '}
-              <span class="section-meta">
-                {source.segments.length} segments
-              </span>
+              {source.name} <span class="section-meta">{source.segments.length} segments</span>
             </h3>
             <ol class="transcript-list">
               {source.segments.map((segment) => (
