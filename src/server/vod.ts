@@ -1,4 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill'
+import { isVideoCamera, isDefaultCamera } from '../lib/vod-view'
 import { TIMEZONE, dayBounds, dayFromInstant, shiftDay } from '../lib/dates'
 import posterOverridesYaml from '../data/poster-overrides.yaml?raw'
 import { parse } from 'yaml'
@@ -90,7 +91,7 @@ export const cameras = (base: string) => json<Camera[]>(base, '/api/cameras')
 
 // Use the same cached, indexed monthly availability API as @vod/web.
 export async function vodCalendar(base: string, month: string) {
-  const list = await cameras(base)
+  const list = (await cameras(base)).filter((camera) => isVideoCamera(camera.id))
   const calendars = await Promise.all(
     list.map((camera) =>
       json<{ month: string; days: Record<string, boolean> }>(
@@ -100,12 +101,16 @@ export async function vodCalendar(base: string, month: string) {
     )
   )
   const days: Record<string, boolean> = {}
-  for (const calendar of calendars) {
+  const allDays: Record<string, boolean> = {}
+  for (const [index, calendar] of calendars.entries()) {
     for (const [day, available] of Object.entries(calendar.days)) {
-      if (available) days[day] = true
+      if (available) {
+        allDays[day] = true
+        if (isDefaultCamera(list[index].id)) days[day] = true
+      }
     }
   }
-  return { month, days }
+  return { month, days, allDays }
 }
 
 interface ArchiveEvent {
@@ -170,7 +175,7 @@ export async function coverage(
   const warnings: string[] = []
   const results = await Promise.all(
     available
-      .filter((c) => c.first < end && c.last > start)
+      .filter((c) => isVideoCamera(c.id) && c.first < end && c.last > start)
       .map(async (camera) => {
         try {
           const localFirst = dayFromInstant(start, camera.timezone)

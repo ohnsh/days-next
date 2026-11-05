@@ -23,12 +23,34 @@ test('calendar unions availability using monthly camera endpoints only', async (
   expect(await vodCalendar('https://vod.example', '2026-10')).toEqual({
     month: '2026-10',
     days: { '2026-10-01': true, '2026-10-03': true },
+    allDays: { '2026-10-01': true, '2026-10-03': true },
   })
   expect(requests).toEqual([
     '/api/cameras',
     '/api/cameras/one/calendar?month=2026-10',
     '/api/cameras/two/calendar?month=2026-10',
   ])
+})
+
+test('views exclude audio entirely and only show bedroom availability in allDays', async () => {
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(String(input))
+    if (url.pathname === '/api/cameras') {
+      return Response.json(['apartment', 'bedroom', 'memo', 'samson'].map((id) => ({ id })))
+    }
+    if (url.pathname === '/api/cameras/apartment/calendar') {
+      return Response.json({ days: { '2026-10-01': true } })
+    }
+    if (url.pathname === '/api/cameras/bedroom/calendar') {
+      return Response.json({ days: { '2026-10-01': true, '2026-10-02': true } })
+    }
+    throw new Error(`Audio sources must not be requested: ${url}`)
+  }) as typeof fetch
+  expect(await vodCalendar('https://vod.example', '2026-10')).toEqual({
+    month: '2026-10',
+    days: { '2026-10-01': true },
+    allDays: { '2026-10-01': true, '2026-10-02': true },
+  })
 })
 
 test('calendar failures do not masquerade as days without content', async () => {

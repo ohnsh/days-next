@@ -5,11 +5,14 @@ import Post from './Post.astro'
 import { dayTitle, dayUrl } from '../lib/dates'
 import { getPostsForDay } from '../lib/posts'
 import type { Day, SourceItem } from '../lib/types'
+import { isVideoCamera, isDefaultCamera } from '../lib/vod-view'
 interface Props {
   day: Day
   expanded?: boolean
 }
 const { day, expanded = false } = Astro.props
+const cameras = day.cameras.filter((camera) => isVideoCamera(camera.id))
+const hasDefaultCameras = cameras.some((camera) => isDefaultCamera(camera.id))
 const posts = await getPostsForDay(day.day)
 const commits = day.items.filter((i) => i.source === 'github')
 const videos = day.items.filter((i) => i.source === 'youtube')
@@ -31,7 +34,7 @@ const orderedVideoCategories = [...videoCategories.entries()].sort(([a], [b]) =>
 for (const [, items] of orderedVideoCategories) {
   items.sort((a, b) => a.title.localeCompare(b.title))
 }
-const count = posts.length + day.events.length + day.cameras.length + day.items.length
+const count = posts.length + day.events.length + cameras.length + day.items.length
 /*const summary = [
   { amount: posts.length, label: 'post' },
   { amount: day.cameras.length, label: 'camera' },
@@ -92,14 +95,26 @@ const count = posts.length + day.events.length + day.cameras.length + day.items.
       ))}
     </section>
   )}
-  {day.cameras.length > 0 && (
-    <section class="day-section">
+  {cameras.length > 0 && (
+    <section class="day-section" data-vod-section>
       <h3>
         <span class="section-dot"></span>VOD{' '}
+        <label class="vod-show-all">
+          <input type="checkbox" data-vod-show-all /> Show all
+        </label>
       </h3>
+      {!hasDefaultCameras && (
+        <p class="empty" data-vod-empty>
+          No cameras in the default view.
+        </p>
+      )}
       <div class="media-grid">
-        {day.cameras.map((camera) => (
-          <article class="camera-card">
+        {cameras.map((camera) => (
+          <article
+            class="camera-card"
+            data-vod-default={String(isDefaultCamera(camera.id))}
+            hidden={!isDefaultCamera(camera.id)}
+          >
             <VodPlayer
               poster={camera.poster || '/poster-placeholder.svg'}
               title={`${camera.name} — ${day.day}`}
@@ -167,3 +182,42 @@ const count = posts.length + day.events.length + day.cameras.length + day.items.
   )}
   {!count && !day.warnings.length && <p class="empty">Nothing gathered for this day yet.</p>}
 </article>
+
+<style>
+  [data-vod-section] [hidden] {
+    display: none;
+  }
+  .vod-show-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: auto;
+    font-size: 0.8rem;
+    font-weight: normal;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  import { getShowAll, setShowAll, subscribeShowAll } from '../lib/vod-preference'
+
+  function updateView() {
+    const showAll = getShowAll()
+    document.querySelectorAll<HTMLInputElement>('[data-vod-show-all]').forEach((input) => {
+      input.checked = showAll
+    })
+    document.querySelectorAll<HTMLElement>('[data-vod-default="false"]').forEach((card) => {
+      card.hidden = !showAll
+    })
+    document.querySelectorAll<HTMLElement>('[data-vod-empty]').forEach((message) => {
+      message.hidden = showAll
+    })
+  }
+  subscribeShowAll(updateView)
+  updateView()
+  document.addEventListener('change', (event) => {
+    if (event.target instanceof HTMLInputElement && event.target.matches('[data-vod-show-all]')) {
+      setShowAll(event.target.checked)
+    }
+  })
+</script>

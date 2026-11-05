@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
+import { getShowAll, subscribeShowAll } from '../lib/vod-preference'
 import { DayButton, DayPicker, type DayButtonProps } from 'react-day-picker'
 import 'react-day-picker/style.css'
 import './calendar.css'
@@ -6,6 +7,7 @@ import './calendar.css'
 interface CalendarData {
   month: string
   days: Record<string, boolean>
+  allDays: Record<string, boolean>
 }
 
 // Calendar dates are wall dates, not UTC instants. Avoid UTC parsing shifting a day.
@@ -41,6 +43,7 @@ export default function CalendarPicker({
   admin?: boolean
 }) {
   const id = useId()
+  const showAll = useSyncExternalStore(subscribeShowAll, getShowAll, () => false)
   const dialog = useRef<HTMLDialogElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
@@ -127,7 +130,9 @@ export default function CalendarPicker({
               autoFocus
               fixedWeeks
               modifiers={{
-                vod: (date) => availability?.month === monthKey && !!availability.days[dayOf(date)],
+                vod: (date) =>
+                  availability?.month === monthKey &&
+                  !!(showAll ? availability.allDays : availability.days)[dayOf(date)],
               }}
               components={{ DayButton: ContentDayButton }}
               onSelect={(date) => {
