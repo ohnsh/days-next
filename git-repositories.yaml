@@ -1,0 +1,10 @@
+- id: days-next
+  path: ${REPOS_ROOT}/days-next
+  defaultBranch: main
+  refs: [main, prototype/git-activity]
+  commitUrl: https://github.com/ohnsh/days-next/commit/{sha}
+
+- id: vod
+  path: ${REPOS_ROOT}/vod
+  defaultBranch: main
+  refs: [main]

@@ -12,6 +12,3 @@ dist/
 worker-configuration.d.ts
 .worktrees/
 .DS_Store
-git-repositories.json
-git-repositories.yaml
-git-repositories.yml
