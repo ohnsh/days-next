@@ -2,13 +2,27 @@ import { chromium } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 
-// This smoke check intentionally targets the local prototype and its local database.
-const base = 'http://127.0.0.1:4321'
+// Targets the local app; event mutations use its configured VOD API and admin token.
+const base = 'http://localhost:4321'
 await mkdir('.data/screenshots', { recursive: true })
 const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
 const errors = []
 page.on('pageerror', (error) => errors.push(error.message))
+async function mutate(method, button) {
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url() === `${base}/api/admin/events` &&
+        response.request().method() === method
+    ),
+    button.click(),
+  ])
+  assert.ok(
+    response.ok(),
+    `${method} /api/admin/events failed (${response.status()}): ${await response.text()}`
+  )
+}
 try {
   let response = await page.goto(`${base}/2026/10/19/`)
   assert.equal(response.status(), 200)
@@ -37,14 +51,14 @@ try {
   await page.goto(`${base}/admin/?day=2026-10-19`)
   await page.getByLabel('Title', { exact: true }).fill('Browser smoke note')
   await page.getByLabel('Notes', { exact: true }).fill('A temporary local test')
-  await page.getByRole('button', { name: 'Save event', exact: true }).click()
+  await mutate('POST', page.getByRole('button', { name: 'Save event', exact: true }))
   await page.locator('.admin-list article').filter({ hasText: 'Browser smoke note' }).waitFor()
   response = await page.request.get(`${base}/2026/10/19/`)
   assert.ok(!(await response.text()).includes('Browser smoke note'), 'Private notes stay private')
   const card = page.locator('.admin-list article').filter({ hasText: 'Browser smoke note' })
   await card.getByRole('button', { name: 'Edit', exact: true }).click()
   await page.getByLabel('Publish on the day page').check()
-  await page.getByRole('button', { name: 'Save event', exact: true }).click()
+  await mutate('PUT', page.getByRole('button', { name: 'Save event', exact: true }))
   await page
     .locator('.admin-list article')
     .filter({ hasText: 'Browser smoke note' })
@@ -55,11 +69,7 @@ try {
     (await response.text()).includes('Browser smoke note'),
     'Published note appears without a rebuild'
   )
-  await page
-    .locator('.admin-list article')
-    .filter({ hasText: 'Browser smoke note' })
-    .getByRole('button', { name: 'Delete', exact: true })
-    .click()
+  await mutate('DELETE', card.getByRole('button', { name: 'Delete', exact: true }))
   await page.waitForURL(`${base}/admin/?day=2026-10-19`)
   await page.waitForFunction(
     () =>

@@ -190,13 +190,16 @@ bun run types
 bun run check
 bun run test
 bun run build
-bun run test:browser            # local database + dev server must be running
+bun run test:browser            # local database + dev server + VOD admin API access required
 ```
 
 Unit/integration tests cover DST, midnight boundaries, explicit YouTube dates, private repository
 exclusion, overlap coverage, private/public notes, and concurrent edits. Browser smoke tests
 exercise a real VOD day, click-to-load players, mobile layout, invalid dates, same-origin
-enforcement, and the full note lifecycle. They create and delete a temporary local event. Install
+enforcement, and the full note lifecycle. They create, publish, and delete a temporary event in
+the configured VOD backend (`VOD_BASE_URL`, default `https://vod.ohn.sh`). Set
+`VOD_ADMIN_API_TOKEN` in `.dev.vars` and restart the dev server before running the test.
+The VOD admin API must accept that token without a Cloudflare Access redirect. Install
 Chromium with `bunx playwright install chromium` if needed. Screenshots are written beneath
 `.data/screenshots/`.
 
