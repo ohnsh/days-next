@@ -162,13 +162,14 @@ and Shorts classification. Import data is plain text rendered with Astro escapin
 ## Git repository prototype
 
 Git imports are a separate source from GitHub, with their own IDs and sync status. Run
-`bun run db:migrate` first, then copy `git-repositories.example.json` to the ignored
-`git-repositories.json` and edit its entries. Each entry explicitly opts a repository into
+`bun run db:migrate` first, then copy `git-repositories.example.yaml` to the ignored
+`git-repositories.yaml` and edit its entries. Each entry explicitly opts a repository into
 the public feed. Run:
 
 ```sh
-bun run sync:git                       # git-repositories.json
-bun run sync:git /path/to/manifest.json
+bun run sync:git                       # git-repositories.yaml
+bun run sync:git /path/to/manifest.yaml
+bun run sync:git --force               # accept non-fast-forward changes/removals
 ```
 
 The existing `sync`, `sync github`, and `sync --full` commands retain their existing behavior;
@@ -176,13 +177,18 @@ they do not invoke Git imports. Running both importers for the same history inte
 produces separate Git and GitHub entries. To switch, stop running the GitHub importer;
 its already-imported rows remain until explicitly removed.
 
-The manifest is a JSON array. Entry fields:
+The manifest is a YAML sequence (existing JSON manifests can still be passed explicitly).
+Entry fields:
 
 - `id`: stable repository identity used in `git:<id>:<sha>` IDs and feed grouping.
-- Exactly one of `path` (relative to the manifest, or absolute) and `remote` (a Git transport
+- Exactly one of `path` (repository root, relative to the manifest or absolute) and `remote` (a Git transport
   URL, including `user@host:/path/repo.git` or `ssh://…`). Local paths are read without
   fetching or modifying the working tree. Remotes are fetched into owned bare caches under
   `.data/git-repositories/`; SSH uses your normal keys/config and noninteractive authentication.
+  Paths support `$VARIABLE` and `${VARIABLE}` substitutions, e.g. `${REPOS_ROOT}/days-next`.
+  Set `REPOS_ROOT` in the shell or `.dev.vars` on each machine; shell values take precedence.
+  Unset or empty variables abort sync. Expansion applies only to `path`, with no shell execution
+  or shell default-value syntax.
 - `defaultBranch`: optional branch name, such as `main`. Otherwise remote entries discover
   the remote's symbolic HEAD; local entries use `origin/HEAD` to identify the corresponding
   local branch, or a bare repository's symbolic HEAD. A working checkout's current branch
@@ -201,9 +207,23 @@ The manifest is a JSON array. Entry fields:
 
 Every run scans the complete history reachable from the selected branch tips and reconciles
 the entire Git source atomically after all repositories succeed. Unchanged rows retain their
-timestamps. Removed manifest entries, removed refs, and rewritten commits disappear from the
-feed; a missing configured ref or failed fetch aborts publication instead. Shallow repositories
-are rejected. An empty manifest explicitly clears the Git source.
+timestamps. Per-repository/ref tips are stored in the shared Days database, atomically with
+the feed rows. Each previously synced tip must remain reachable from that same ref's new tip:
+a behind checkout, divergent/rebased branch, or unavailable prior commit requires `--force`.
+This check includes commits excluded by author filters. Removed repositories/refs and any
+removal of previously imported feed records also require `--force`. Adding refs and updating
+labels after a fast-forward merge do not.
+
+A missing configured repository/ref, unset path variable, shallow repository, or failed fetch
+aborts the entire import without changing database records, **even with `--force`**. Removing
+an entry from the manifest is different: it intentionally removes its history, requiring
+`--force`. An empty manifest can clear the Git source with `--force`.
+
+Run `bun run db:migrate` when upgrading to install the checkpoint table. On the first sync
+after upgrading, existing feed records are protected against removal, and current ref tips
+establish the baseline. Previous per-ref ancestry cannot be reconstructed from old feed rows
+alone. Use an up-to-date checkout for this first run. Subsequent checks work across machines
+that target the same database; `--force` accepts the new snapshot as the next baseline.
 
 Commits shared by selected refs appear once per repository. Commits outside default-branch
 history display labels for every selected topic branch that reaches them. Labels disappear

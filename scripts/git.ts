@@ -1,6 +1,9 @@
-import { mkdir } from 'node:fs/promises'
+import { mkdir, realpath } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
+import { parse } from 'yaml'
+import type { Client } from '@libsql/client'
+import { replaceSource } from './db'
 import { dayFromInstant } from '../src/lib/dates'
 import { isMyCommit } from '../src/lib/sources'
 import type { SourceItem } from '../src/lib/types'
@@ -94,7 +97,17 @@ async function git(path: string, args: string[], optional = false): Promise<stri
 }
 
 async function repositoryPath(repo: GitRepository, base: string, cache: string) {
-  if (repo.path) return resolve(base, repo.path)
+  if (repo.path) {
+    const path = await realpath(resolve(base, expandPath(repo.path)))
+    const bare =
+      (await git(path, ['rev-parse', '--is-bare-repository'])).trim() === 'true'
+    const root = (
+      await git(path, ['rev-parse', bare ? '--absolute-git-dir' : '--show-toplevel'])
+    ).trim()
+    if ((await realpath(root)) !== path)
+      throw new Error(`${repo.id}: path must be a repository root, not a subdirectory`)
+    return path
+  }
   const path = resolve(cache, createHash('sha256').update(repo.remote!).digest('hex'))
   await mkdir(path, { recursive: true })
   if (!(await Bun.file(resolve(path, 'HEAD')).exists()))
@@ -134,12 +147,28 @@ async function defaultRef(repo: GitRepository, path: string): Promise<string> {
   throw new Error(`${repo.id}: cannot determine default branch; set defaultBranch`)
 }
 
-export async function collectGit(
-  manifest: string,
-  cache = '.data/git-repositories'
-): Promise<SourceItem[]> {
-  const repos = parseManifest(await Bun.file(manifest).json())
+export function expandPath(path: string, env: NodeJS.ProcessEnv = process.env) {
+  return path.replace(
+    /\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g,
+    (_, braced, bare) => {
+      const name = braced ?? bare
+      if (!env[name]) throw new Error(`Unset or empty path environment variable: ${name}`)
+      return env[name]!
+    }
+  )
+}
+
+interface GitRefSnapshot {
+  repository: string
+  ref: string
+  sha: string
+  ancestors: Set<string>
+}
+
+async function collectGitSnapshot(manifest: string, cache = '.data/git-repositories') {
+  const repos = parseManifest(parse(await Bun.file(manifest).text()))
   const items: SourceItem[] = []
+  const checkpoints: GitRefSnapshot[] = []
   for (const repo of repos) {
     const path = await repositoryPath(repo, dirname(resolve(manifest)), cache)
     if ((await git(path, ['rev-parse', '--is-shallow-repository'])).trim() === 'true')
@@ -160,15 +189,17 @@ export async function collectGit(
       )
     }
     const branches = new Map<string, string[]>()
+    const histories = new Map<string, Set<string>>()
+    for (const [ref, sha] of tips) {
+      const history = new Set(
+        (await git(path, ['rev-list', sha, '--'])).trim().split('\n').filter(Boolean)
+      )
+      histories.set(ref, history)
+      checkpoints.push({ repository: repo.id, ref, sha, ancestors: history })
+    }
     for (const ref of refs.filter((ref) => ref !== main)) {
-      const hashes = await git(path, [
-        'rev-list',
-        tips.get(ref)!,
-        '--not',
-        tips.get(main)!,
-        '--',
-      ])
-      for (const sha of hashes.trim().split('\n').filter(Boolean)) {
+      for (const sha of histories.get(ref)!) {
+        if (histories.get(main)!.has(sha)) continue
         branches.set(sha, [
           ...(branches.get(sha) ?? []),
           ref.replace(/^refs\/(heads|remotes)\//, ''),
@@ -211,5 +242,48 @@ export async function collectGit(
       })
     }
   }
-  return items
+  return { items, checkpoints }
+}
+
+export async function collectGit(
+  manifest: string,
+  cache?: string
+): Promise<SourceItem[]> {
+  return (await collectGitSnapshot(manifest, cache)).items
+}
+
+export async function syncGit(
+  manifest: string,
+  options: { force?: boolean; db?: Client; cache?: string } = {}
+) {
+  // Any missing repository/ref or failed fetch aborts here, including with --force.
+  const { items, checkpoints } = await collectGitSnapshot(manifest, options.cache)
+  return replaceSource('git', items, options.db, async (tx, existing) => {
+    const previous = await tx.execute('SELECT repository, ref, sha FROM git_sync_refs')
+    const problems: string[] = []
+    for (const row of previous.rows) {
+      const current = checkpoints.find(
+        (entry) => entry.repository === row.repository && entry.ref === row.ref
+      )
+      if (!current) problems.push(`${row.repository}: removed ref ${row.ref}`)
+      else if (!current.ancestors.has(String(row.sha)))
+        problems.push(
+          `${row.repository} ${row.ref}: ${row.sha} is not an ancestor of ${current.sha} (behind, divergent, or unavailable)`
+        )
+    }
+    // Also protects pre-checkpoint imports and author-filter/configuration changes.
+    const ids = new Set(items.map((item) => item.id))
+    const removed = [...existing.keys()].filter((id) => !ids.has(id))
+    if (removed.length)
+      problems.push(`${removed.length} previously imported commit(s) would be removed`)
+    if (problems.length && !options.force)
+      throw new Error(`Git sync requires --force:\n${problems.join('\n')}`)
+    // Checkpoints and feed rows commit together, under the same write transaction.
+    await tx.execute('DELETE FROM git_sync_refs')
+    for (const { repository, ref, sha } of checkpoints)
+      await tx.execute({
+        sql: 'INSERT INTO git_sync_refs VALUES (?,?,?)',
+        args: [repository, ref, sha],
+      })
+  })
 }

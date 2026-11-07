@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createClient } from '@libsql/client'
-import { collectGit, parseManifest } from '../scripts/git'
+import { collectGit, parseManifest, expandPath, syncGit } from '../scripts/git'
 import { replaceSource } from '../scripts/db'
 
 const directories: string[] = []
@@ -163,4 +163,99 @@ test('manifest rejects ambiguous locations, duplicate IDs and unsafe viewer URLs
   expect(() =>
     parseManifest([{ id: 'x', path: '.', commitUrl: 'javascript:{sha}' }])
   ).toThrow()
+})
+
+test('YAML paths expand environment variables and fail for missing values', async () => {
+  expect(
+    expandPath('$REPOS_ROOT/${PROJECT}', { REPOS_ROOT: '/repos', PROJECT: 'days' })
+  ).toBe('/repos/days')
+  expect(() => expandPath('${UNSET}/repo', {})).toThrow('Unset or empty')
+  expect(() => expandPath('$EMPTY/repo', { EMPTY: '' })).toThrow('Unset or empty')
+  const f = await fixture()
+  f.commit('base')
+  const old = process.env.DAYS_TEST_REPOS_ROOT
+  process.env.DAYS_TEST_REPOS_ROOT = f.path
+  try {
+    await Bun.write(
+      f.manifest,
+      `# portable manifest\n- id: fixture\n  path: \${DAYS_TEST_REPOS_ROOT}\n  defaultBranch: main\n  authors:\n    emails: [test@example.com]\n`
+    )
+    expect(await collectGit(f.manifest)).toHaveLength(1)
+  } finally {
+    if (old === undefined) delete process.env.DAYS_TEST_REPOS_ROOT
+    else process.env.DAYS_TEST_REPOS_ROOT = old
+  }
+})
+
+test('shared database checkpoints reject stale/divergent refs, removals and missing repositories atomically', async () => {
+  const f = await fixture()
+  const base = f.commit('base')
+  await f.configure()
+  const db = createClient({ url: ':memory:' })
+  const snapshot = async () =>
+    Promise.all(
+      ['source_items', 'git_sync_refs', 'sync_runs'].map(
+        async (table) => (await db.execute(`SELECT * FROM ${table}`)).rows
+      )
+    )
+  try {
+    for (const name of ['001_days', '002_git_source', '003_git_refs'])
+      await db.executeMultiple(await Bun.file(`migrations/${name}.sql`).text())
+    await syncGit(f.manifest, { db })
+    // Advance with an excluded author: ancestry must be protected even without new feed rows.
+    f.git('config', 'user.email', 'someone-else@example.com')
+    const latest = f.commit('excluded author')
+    expect((await syncGit(f.manifest, { db })).upserted).toBe(0)
+    const saved = await snapshot()
+    f.git('reset', '--hard', base)
+    await expect(syncGit(f.manifest, { db })).rejects.toThrow('requires --force')
+    expect(await snapshot()).toEqual(saved)
+    f.commit('divergent')
+    await expect(syncGit(f.manifest, { db })).rejects.toThrow('requires --force')
+    expect(await snapshot()).toEqual(saved)
+
+    await f.configure({ path: 'missing-directory' })
+    await expect(syncGit(f.manifest, { db, force: true })).rejects.toThrow()
+    expect(await snapshot()).toEqual(saved)
+    await f.configure({ refs: ['main', 'missing'] })
+    await expect(syncGit(f.manifest, { db, force: true })).rejects.toThrow()
+    expect(await snapshot()).toEqual(saved)
+
+    await f.configure()
+    await syncGit(f.manifest, { db, force: true })
+    expect((await db.execute('SELECT sha FROM git_sync_refs')).rows[0].sha).not.toBe(
+      latest
+    )
+    f.git('branch', 'topic')
+    await f.configure({ refs: ['main', 'topic'] })
+    await syncGit(f.manifest, { db })
+    await f.configure()
+    await expect(syncGit(f.manifest, { db })).rejects.toThrow('removed ref')
+    await syncGit(f.manifest, { db, force: true })
+    await Bun.write(f.manifest, '[]')
+    await expect(syncGit(f.manifest, { db })).rejects.toThrow('requires --force')
+    await syncGit(f.manifest, { db, force: true })
+    expect((await db.execute('SELECT * FROM source_items')).rows).toHaveLength(0)
+    expect((await db.execute('SELECT * FROM git_sync_refs')).rows).toHaveLength(0)
+  } finally {
+    db.close()
+  }
+})
+
+test('legacy imports cannot lose records when establishing the first ref checkpoints', async () => {
+  const f = await fixture()
+  f.commit('base')
+  await f.configure()
+  const db = createClient({ url: ':memory:' })
+  try {
+    for (const name of ['001_days', '002_git_source', '003_git_refs'])
+      await db.executeMultiple(await Bun.file(`migrations/${name}.sql`).text())
+    await replaceSource('git', await collectGit(f.manifest), db)
+    f.git('commit', '--amend', '--allow-empty', '-m', 'rewritten')
+    await expect(syncGit(f.manifest, { db })).rejects.toThrow('previously imported')
+    expect((await db.execute('SELECT * FROM git_sync_refs')).rows).toHaveLength(0)
+    await syncGit(f.manifest, { db, force: true })
+  } finally {
+    db.close()
+  }
 })

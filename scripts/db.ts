@@ -77,13 +77,18 @@ async function batchStatements(
 export async function replaceSource(
   source: SourceItem['source'],
   items: SourceItem[],
-  db?: Client
+  db?: Client,
+  beforeReplace?: (
+    tx: Awaited<ReturnType<Client['transaction']>>,
+    existing: ExistingRows
+  ) => Promise<void>
 ) {
   const client = db ?? scriptDatabase()
   let tx: Awaited<ReturnType<Client['transaction']>> | undefined
   try {
     tx = await client.transaction('write')
     const existing = await readExisting(tx, source)
+    await beforeReplace?.(tx, existing)
     const itemIds = new Set(items.map((item) => item.id))
     const toDelete = [...existing.keys()].filter((id) => !itemIds.has(id))
     const toUpsert = items.filter(
