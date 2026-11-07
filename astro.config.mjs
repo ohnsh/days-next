@@ -8,7 +8,9 @@ import { parse } from 'yaml'
 import { validatePosterOverrides } from './src/lib/poster-overrides.ts'
 
 validatePosterOverrides(
-  parse(readFileSync(new URL('./src/data/poster-overrides.yaml', import.meta.url), 'utf8'))
+  parse(
+    readFileSync(new URL('./src/data/poster-overrides.yaml', import.meta.url), 'utf8')
+  )
 )
 
 export default defineConfig({

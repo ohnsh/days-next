@@ -30,7 +30,11 @@ try {
   let response = await page.goto(`${base}/2026/10/19/`)
   assert.equal(response.status(), 200)
   await page.locator('vod-player-astro').first().waitFor()
-  assert.equal(await page.locator('iframe').count(), 0, 'Players must remain unloaded initially')
+  assert.equal(
+    await page.locator('iframe').count(),
+    0,
+    'Players must remain unloaded initially'
+  )
   await page.screenshot({ path: '.data/screenshots/day-desktop.png', fullPage: true })
   await page.locator('vod-player-astro button').first().click()
   await page.locator('vod-player-astro iframe').first().waitFor()

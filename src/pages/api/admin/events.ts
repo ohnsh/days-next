@@ -42,11 +42,14 @@ export const ALL: APIRoute = async ({ request, locals, cache }) => {
     try {
       await cache.invalidate({ tags: ['days'] })
     } catch (error) {
-      console.error(JSON.stringify({ event: 'cache-invalidation-failed', message: String(error) }))
+      console.error(
+        JSON.stringify({ event: 'cache-invalidation-failed', message: String(error) })
+      )
     }
   }
   try {
-    if (request.method === 'DELETE') await deleteEvent(value, vodBaseUrl(), vodAdminToken())
+    if (request.method === 'DELETE')
+      await deleteEvent(value, vodBaseUrl(), vodAdminToken())
     else await saveEvent(value, locals.admin.id, vodBaseUrl(), vodAdminToken())
     await invalidate()
     return Response.json({ ok: true })
@@ -60,10 +63,16 @@ export const ALL: APIRoute = async ({ request, locals, cache }) => {
         { error: error.message },
         {
           status:
-            error instanceof ConflictError ? 409 : error instanceof UnavailableError ? 503 : 400,
+            error instanceof ConflictError
+              ? 409
+              : error instanceof UnavailableError
+                ? 503
+                : 400,
         }
       )
-    console.error(JSON.stringify({ event: 'vod-editorial-write-failed', message: String(error) }))
+    console.error(
+      JSON.stringify({ event: 'vod-editorial-write-failed', message: String(error) })
+    )
     return Response.json({ error: 'Could not save the event in VOD' }, { status: 502 })
   }
 }

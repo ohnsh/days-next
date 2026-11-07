@@ -5,7 +5,8 @@ import { parseEnv } from 'node:util'
 // Use the same local connection as the Worker; explicit shell variables win.
 const vars = Bun.file(new URL('../.dev.vars', import.meta.url))
 if (await vars.exists()) {
-  for (const [key, value] of Object.entries(parseEnv(await vars.text()))) process.env[key] ??= value
+  for (const [key, value] of Object.entries(parseEnv(await vars.text())))
+    process.env[key] ??= value
 }
 
 export function scriptDatabase() {
@@ -19,7 +20,10 @@ type ExistingRows = Map<string, string>
 type SqlReader = Pick<Client, 'execute'>
 type SqlBatcher = Pick<Client, 'batch'>
 
-async function readExisting(db: SqlReader, source: SourceItem['source']): Promise<ExistingRows> {
+async function readExisting(
+  db: SqlReader,
+  source: SourceItem['source']
+): Promise<ExistingRows> {
   const rows = await db.execute({
     sql: 'SELECT id, payload FROM source_items WHERE source=?',
     args: [source],
@@ -34,11 +38,15 @@ export async function getSourceState(
   const client = db ?? scriptDatabase()
   try {
     const [run, existing] = await Promise.all([
-      client.execute({ sql: 'SELECT finished_at FROM sync_runs WHERE source = ?', args: [source] }),
+      client.execute({
+        sql: 'SELECT finished_at FROM sync_runs WHERE source = ?',
+        args: [source],
+      }),
       readExisting(client, source),
     ])
     return {
-      finishedAt: run.rows[0]?.finished_at == null ? null : String(run.rows[0].finished_at),
+      finishedAt:
+        run.rows[0]?.finished_at == null ? null : String(run.rows[0].finished_at),
       existing,
     }
   } finally {
@@ -46,14 +54,21 @@ export async function getSourceState(
   }
 }
 
-function upsertStatements(source: SourceItem['source'], items: SourceItem[], now: string) {
+function upsertStatements(
+  source: SourceItem['source'],
+  items: SourceItem[],
+  now: string
+) {
   return items.map((item) => ({
     sql: 'INSERT OR REPLACE INTO source_items (id,source,day,payload,is_public,updated_at) VALUES (?,?,?,?,1,?)',
     args: [item.id, source, item.day, JSON.stringify(item), now],
   }))
 }
 
-async function batchStatements(db: SqlBatcher, statements: ReturnType<typeof upsertStatements>) {
+async function batchStatements(
+  db: SqlBatcher,
+  statements: ReturnType<typeof upsertStatements>
+) {
   for (let offset = 0; offset < statements.length; offset += 100)
     await db.batch(statements.slice(offset, offset + 100))
 }
@@ -71,15 +86,19 @@ export async function replaceSource(
     const existing = await readExisting(tx, source)
     const itemIds = new Set(items.map((item) => item.id))
     const toDelete = [...existing.keys()].filter((id) => !itemIds.has(id))
-    const toUpsert = items.filter((item) => existing.get(item.id) !== JSON.stringify(item))
+    const toUpsert = items.filter(
+      (item) => existing.get(item.id) !== JSON.stringify(item)
+    )
     const now = new Date().toISOString()
 
     for (let offset = 0; offset < toDelete.length; offset += 100) {
       await tx.batch(
-        toDelete.slice(offset, offset + 100).map((id) => ({
-          sql: 'DELETE FROM source_items WHERE source=? AND id=?',
-          args: [source, id],
-        }))
+        toDelete
+          .slice(offset, offset + 100)
+          .map((id) => ({
+            sql: 'DELETE FROM source_items WHERE source=? AND id=?',
+            args: [source, id],
+          }))
       )
     }
     await batchStatements(tx, upsertStatements(source, toUpsert, now))
@@ -88,7 +107,9 @@ export async function replaceSource(
       args: [source, now, items.length],
     })
     await tx.commit()
-    console.log(`${source} (full): ${toUpsert.length} upserted, ${toDelete.length} removed (${items.length} total)`)
+    console.log(
+      `${source} (full): ${toUpsert.length} upserted, ${toDelete.length} removed (${items.length} total)`
+    )
     return { upserted: toUpsert.length, deleted: toDelete.length, total: items.length }
   } catch (error) {
     if (tx && !tx.closed) await tx.rollback()
@@ -99,13 +120,19 @@ export async function replaceSource(
   }
 }
 
-export async function upsertSource(source: SourceItem['source'], items: SourceItem[], db?: Client) {
+export async function upsertSource(
+  source: SourceItem['source'],
+  items: SourceItem[],
+  db?: Client
+) {
   const client = db ?? scriptDatabase()
   let tx: Awaited<ReturnType<Client['transaction']>> | undefined
   try {
     tx = await client.transaction('write')
     const existing = await readExisting(tx, source)
-    const toUpsert = items.filter((item) => existing.get(item.id) !== JSON.stringify(item))
+    const toUpsert = items.filter(
+      (item) => existing.get(item.id) !== JSON.stringify(item)
+    )
     const now = new Date().toISOString()
     await batchStatements(tx, upsertStatements(source, toUpsert, now))
     const total = new Set([...existing.keys(), ...items.map((item) => item.id)]).size

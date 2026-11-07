@@ -17,7 +17,9 @@ export const GET: APIRoute = async ({ url }) => {
       headers: { 'Cache-Control': 'no-store' },
     })
   } catch (error) {
-    console.error(JSON.stringify({ event: 'vod-calendar-failed', message: String(error) }))
+    console.error(
+      JSON.stringify({ event: 'vod-calendar-failed', message: String(error) })
+    )
     return Response.json(
       { error: 'VOD availability is temporarily unavailable' },
       { status: 502, headers: { 'Cache-Control': 'no-store' } }

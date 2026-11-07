@@ -6,7 +6,8 @@ import { views, coverage, eventsForDay, vodEvents, type Recording } from './vod'
 
 export async function getDays(before = shiftDay(today(), 1), limit = 3): Promise<Day[]> {
   plainDay(before)
-  if (!Number.isInteger(limit) || limit < 1 || limit > 7) throw new Error('Limit must be 1–7 days')
+  if (!Number.isInteger(limit) || limit < 1 || limit > 7)
+    throw new Error('Limit must be 1–7 days')
   const last = shiftDay(before, -1),
     first = shiftDay(before, -limit)
   const db = daysDatabase()
@@ -19,13 +20,17 @@ export async function getDays(before = shiftDay(today(), 1), limit = 3): Promise
       vodEvents(base, firstBounds.start, lastBounds.end)
         .then((data) => ({ data, failed: false }))
         .catch((error) => {
-          console.error(JSON.stringify({ event: 'vod-events-unavailable', message: String(error) }))
+          console.error(
+            JSON.stringify({ event: 'vod-events-unavailable', message: String(error) })
+          )
           return { data: [], failed: true }
         }),
       views(base)
         .then((data) => ({ data, failed: false }))
         .catch((error) => {
-          console.error(JSON.stringify({ event: 'vod-unavailable', message: String(error) }))
+          console.error(
+            JSON.stringify({ event: 'vod-unavailable', message: String(error) })
+          )
           return { data: [], failed: true }
         }),
     ])

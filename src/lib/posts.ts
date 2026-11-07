@@ -13,12 +13,15 @@ export async function getAllPosts(): Promise<PostEntry[]> {
 
 export async function getPostsForDay(day: string): Promise<PostEntry[]> {
   const { getCollection } = await import('astro:content')
-  return (await getCollection('posts', (post) => visiblePost(post) && post.data.day === day)).sort(
-    byDate
-  )
+  return (
+    await getCollection('posts', (post) => visiblePost(post) && post.data.day === day)
+  ).sort(byDate)
 }
 
-export async function getPostsInRange(firstDay: string, lastDay: string): Promise<PostEntry[]> {
+export async function getPostsInRange(
+  firstDay: string,
+  lastDay: string
+): Promise<PostEntry[]> {
   const { getCollection } = await import('astro:content')
   return (
     await getCollection(
@@ -41,11 +44,15 @@ export function shiftHeadingsHtml(html: string, offset: number): string {
     /<(pre|code)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,
     (block) => `\u0000HEADING_PROTECTED_${protectedBlocks.push(block) - 1}\u0000`
   )
-  const shifted = withoutCode.replace(/<(\/?)h([1-6])(\b[^>]*)>/gi, (_tag, slash, level, rest) => {
-    return `<${slash}h${Math.min(6, Number(level) + amount)}${rest}>`
-  })
-  return shifted.replace(/\u0000HEADING_PROTECTED_(\d+)\u0000/g, (_match, index) =>
-    protectedBlocks[Number(index)]
+  const shifted = withoutCode.replace(
+    /<(\/?)h([1-6])(\b[^>]*)>/gi,
+    (_tag, slash, level, rest) => {
+      return `<${slash}h${Math.min(6, Number(level) + amount)}${rest}>`
+    }
+  )
+  return shifted.replace(
+    /\u0000HEADING_PROTECTED_(\d+)\u0000/g,
+    (_match, index) => protectedBlocks[Number(index)]
   )
 }
 
@@ -55,8 +62,20 @@ interface HtmlBlock {
 }
 
 const voidElements = new Set([
-  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param',
-  'source', 'track', 'wbr',
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
 ])
 
 function tagEnd(html: string, from: number): number {
@@ -153,7 +172,10 @@ export function extractExcerptHtml(
   const marker = html.indexOf('<!-- excerpt -->')
   if (marker !== -1) {
     const excerpt = html.slice(0, marker).trimEnd()
-    return { html: excerpt, hasMore: html.slice(marker + '<!-- excerpt -->'.length).trim().length > 0 }
+    return {
+      html: excerpt,
+      hasMore: html.slice(marker + '<!-- excerpt -->'.length).trim().length > 0,
+    }
   }
 
   const blocks = topLevelBlocks(html)

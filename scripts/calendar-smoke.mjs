@@ -26,7 +26,10 @@ for (const [name, engine] of Object.entries({ chromium, webkit })) {
     await trigger.click()
     const next = page.getByRole('button', { name: /next month/i })
     while (await next.isEnabled()) await next.click()
-    assert.ok((await page.locator('.rdp-day_button:disabled').count()) > 0, 'Future dates disabled')
+    assert.ok(
+      (await page.locator('.rdp-day_button:disabled').count()) > 0,
+      'Future dates disabled'
+    )
     await page.setViewportSize({ width: 390, height: 844 })
     const mobile = await dialog.boundingBox()
     assert.ok(mobile.x >= 0 && mobile.x + mobile.width <= 390, 'Mobile dialog fits')
@@ -35,9 +38,14 @@ for (const [name, engine] of Object.entries({ chromium, webkit })) {
       true
     )
     await page.keyboard.press('Escape')
-    await page.route('**/api/calendar?*', (route) => route.fulfill({ status: 502, body: '{}' }))
+    await page.route('**/api/calendar?*', (route) =>
+      route.fulfill({ status: 502, body: '{}' })
+    )
     await trigger.click()
-    await page.getByRole('status').filter({ hasText: 'VOD indicators unavailable' }).waitFor()
+    await page
+      .getByRole('status')
+      .filter({ hasText: 'VOD indicators unavailable' })
+      .waitFor()
     await page.getByRole('button', { name: /Tuesday, October 20/ }).click()
     await page.waitForURL('**/2026/10/20/')
     assert.deepEqual(errors, [])

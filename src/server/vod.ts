@@ -48,7 +48,8 @@ export function recordingPoster(
   now = Date.now(),
   overrideTime?: string
 ) {
-  const localNow = Temporal.Instant.fromEpochMilliseconds(now).toZonedDateTimeISO(TIMEZONE)
+  const localNow =
+    Temporal.Instant.fromEpochMilliseconds(now).toZonedDateTimeISO(TIMEZONE)
   const posters = records.filter((r) => r.posterUrl).sort((a, b) => a.start - b.start)
   const first = posters[0]?.posterUrl ?? null
   if (overrideTime) {
@@ -56,7 +57,11 @@ export function recordingPoster(
       timeZone: TIMEZONE,
       plainTime: overrideTime,
     }).epochMilliseconds
-    return posters.find((r) => r.start >= target)?.posterUrl ?? posters.at(-1)?.posterUrl ?? null
+    return (
+      posters.find((r) => r.start >= target)?.posterUrl ??
+      posters.at(-1)?.posterUrl ??
+      null
+    )
   }
   if (localNow.toPlainDate().toString() !== day) {
     const noon = Temporal.PlainDate.from(day).toZonedDateTime({
@@ -94,7 +99,9 @@ class VodHttpError extends Error {
 }
 
 async function json<T>(base: string, path: string): Promise<T> {
-  const response = await fetch(new URL(path, base), { signal: AbortSignal.timeout(15000) })
+  const response = await fetch(new URL(path, base), {
+    signal: AbortSignal.timeout(15000),
+  })
   if (!response.ok) throw new VodHttpError(response.status)
   return response.json() as Promise<T>
 }
@@ -264,14 +271,25 @@ export async function dayTranscripts(
   for (const c of available) {
     // Attached audio can extend beyond the view's primary video coverage.
     if ((c.first < end && c.last > start) || c.audioSourceIds?.length) {
-      candidates.set(c.id, { id: c.id, name: c.name, timezone: c.timezone, kind: 'views' })
+      candidates.set(c.id, {
+        id: c.id,
+        name: c.name,
+        timezone: c.timezone,
+        kind: 'views',
+      })
     }
   }
   const warnings: string[] = []
   let activeKind: 'view' | 'source' = 'view'
-  if (filter && filterKind === 'source' && !available.some((view) => view.id === filter)) {
+  if (
+    filter &&
+    filterKind === 'source' &&
+    !available.some((view) => view.id === filter)
+  ) {
     activeKind = 'source'
-    const source = (await json<Source[]>(base, '/api/sources')).find((s) => s.id === filter)
+    const source = (await json<Source[]>(base, '/api/sources')).find(
+      (s) => s.id === filter
+    )
     if (
       source &&
       source.first !== null &&
@@ -357,7 +375,8 @@ export async function dayTranscripts(
     id: s.id,
     name: s.name,
     count: s.segments.length,
-    kind: candidates.get(s.id)!.kind === 'views' ? ('view' as const) : ('source' as const),
+    kind:
+      candidates.get(s.id)!.kind === 'views' ? ('view' as const) : ('source' as const),
   }))
   const activeSource = filter
   const sources = activeSource

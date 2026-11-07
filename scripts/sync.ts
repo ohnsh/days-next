@@ -96,9 +96,7 @@ async function syncGithub(full: boolean) {
     (page) => page.some((repo) => repo.pushed_at && Date.parse(repo.pushed_at) < cutoffMs)
   )
   const recentRepos = repos.filter(
-    (repo) =>
-      !repo.private &&
-      (!repo.pushed_at || Date.parse(repo.pushed_at) >= cutoffMs)
+    (repo) => !repo.private && (!repo.pushed_at || Date.parse(repo.pushed_at) >= cutoffMs)
   )
   const commitsByRepo = new Map<string, GithubCommit[]>()
   for (const repo of recentRepos) {
@@ -160,7 +158,9 @@ async function syncYoutube(full: boolean) {
     const shortIds = new Set(shorts.map((video) => video.snippet.resourceId.videoId))
     await replaceSource(
       'youtube',
-      uploads.map((video) => youtubeItem(video, shortIds)).filter((item): item is SourceItem => item !== null)
+      uploads
+        .map((video) => youtubeItem(video, shortIds))
+        .filter((item): item is SourceItem => item !== null)
     )
     return
   }
@@ -187,8 +187,12 @@ async function syncYoutube(full: boolean) {
     return
   }
 
-  const pendingShortIds = new Set(newUploads.map((video) => video.snippet.resourceId.videoId))
-  const oldestNewUpload = Math.min(...newUploads.map((video) => Date.parse(video.snippet.publishedAt)))
+  const pendingShortIds = new Set(
+    newUploads.map((video) => video.snippet.resourceId.videoId)
+  )
+  const oldestNewUpload = Math.min(
+    ...newUploads.map((video) => Date.parse(video.snippet.publishedAt))
+  )
   const shortIds = new Set<string>()
   token = ''
   let shortsDone = false
@@ -219,7 +223,10 @@ async function syncYoutube(full: boolean) {
 const args = process.argv.slice(2)
 const full = args.includes('--full')
 const targets = args.filter((arg) => arg !== '--full')
-if (targets.length > 1 || (targets[0] && !['all', 'github', 'youtube'].includes(targets[0])))
+if (
+  targets.length > 1 ||
+  (targets[0] && !['all', 'github', 'youtube'].includes(targets[0]))
+)
   throw new Error('Expected optional target all, github, or youtube, and optional --full')
 const source = targets[0] || 'all'
 if (source !== 'youtube') await syncGithub(full)

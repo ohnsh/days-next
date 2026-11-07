@@ -5,7 +5,8 @@ export async function adminIdentity(request: Request, issuer: string, audience: 
   if (!token || !issuer || !audience) return null
   try {
     const url = new URL(issuer)
-    if (url.protocol !== 'https:' || !url.hostname.endsWith('.cloudflareaccess.com')) return null
+    if (url.protocol !== 'https:' || !url.hostname.endsWith('.cloudflareaccess.com'))
+      return null
     const keys = createRemoteJWKSet(new URL('/cdn-cgi/access/certs', issuer))
     const { payload } = await jwtVerify(token, keys, {
       issuer,

@@ -24,10 +24,17 @@ const sourceParam = viewParam || Astro.url.searchParams.get('source')?.trim() ||
 let transcript: DayTranscripts | null = null
 let error: Error | null = null
 try {
-  transcript = await dayTranscripts(vodBaseUrl(), key, sourceParam, viewParam ? 'view' : 'source')
+  transcript = await dayTranscripts(
+    vodBaseUrl(),
+    key,
+    sourceParam,
+    viewParam ? 'view' : 'source'
+  )
 } catch (err) {
   error = err instanceof Error ? err : new Error(String(err))
-  console.error(JSON.stringify({ event: 'transcript-error', day: key, message: error.message }))
+  console.error(
+    JSON.stringify({ event: 'transcript-error', day: key, message: error.message })
+  )
   Astro.response.status = 503
 }
 
@@ -37,7 +44,9 @@ Astro.response.headers.set(
   cacheable ? 'public, max-age=0, must-revalidate' : 'no-store'
 )
 if (Astro.cache.enabled) {
-  Astro.cache.set(cacheable ? { ...dayCachePolicy(key), tags: ['days', `day:${key}`] } : false)
+  Astro.cache.set(
+    cacheable ? { ...dayCachePolicy(key), tags: ['days', `day:${key}`] } : false
+  )
 }
 
 const activeSource = transcript?.activeSource ?? sourceParam
@@ -60,7 +69,9 @@ const summary =
     <p class="eyebrow">Day transcript · Central time</p>
   </div>
   {error ? (
-    <p class="notice">This transcript is temporarily unavailable. Please try again shortly.</p>
+    <p class="notice">
+      This transcript is temporarily unavailable. Please try again shortly.
+    </p>
   ) : (
     transcript && (
       <article class="day-card">
@@ -110,7 +121,8 @@ const summary =
           <section class="day-section transcript-source" id={`source-${source.id}`}>
             <h3>
               <span class="section-dot"></span>
-              {source.name} <span class="section-meta">{source.segments.length} segments</span>
+              {source.name}{' '}
+              <span class="section-meta">{source.segments.length} segments</span>
             </h3>
             <ol class="transcript-list">
               {source.segments.map((segment) => (

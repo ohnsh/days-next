@@ -17,10 +17,16 @@ const { slides } = Astro.props
 <div class="slideshow" data-slideshow style={`--slide-count: ${slides.length}`}>
   <section class="toolbar" aria-label="Slideshow controls">
     <nav>
-      <button type="button" data-prev aria-label="Previous slide">←</button>
-      <button type="button" data-next aria-label="Next slide">→</button>
+      <button type="button" data-prev aria-label="Previous slide">
+        ←
+      </button>
+      <button type="button" data-next aria-label="Next slide">
+        →
+      </button>
     </nav>
-    <p aria-live="polite"><span data-current>1</span> of {slides.length}</p>
+    <p aria-live="polite">
+      <span data-current>1</span> of {slides.length}
+    </p>
   </section>
   <section class="viewport" aria-label="Slides">
     <div class="track">

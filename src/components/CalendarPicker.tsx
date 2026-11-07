@@ -139,7 +139,9 @@ export default function CalendarPicker({
                 if (!date) return
                 const day = dayOf(date)
                 if (day > today) return
-                location.assign(admin ? `/admin/?day=${day}` : `/${day.replaceAll('-', '/')}/`)
+                location.assign(
+                  admin ? `/admin/?day=${day}` : `/${day.replaceAll('-', '/')}/`
+                )
               }}
             />
           )}

@@ -2,7 +2,11 @@ import type { LiveLoader } from 'astro/loaders'
 import type { Day } from '../lib/types'
 import { getDay, getDays } from '../server/days'
 
-export function daysLoader(): LiveLoader<Day, { id: string }, { before?: string; limit?: number }> {
+export function daysLoader(): LiveLoader<
+  Day,
+  { id: string },
+  { before?: string; limit?: number }
+> {
   return {
     name: 'days-database',
     async loadEntry({ filter }) {

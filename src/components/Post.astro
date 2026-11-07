@@ -17,13 +17,21 @@ const { Content } = await render(post)
 
 <article class:list={['post', { 'post-excerpt': mode === 'excerpt' }]}>
   <header class="post-heading">
-    <p class="eyebrow"><time datetime={post.data.day}>{post.data.day}</time></p>
+    <p class="eyebrow">
+      <time datetime={post.data.day}>{post.data.day}</time>
+    </p>
     <Title>
-      {mode === 'excerpt' ? <a href={postUrl(post)}>{post.data.title}</a> : post.data.title}
+      {mode === 'excerpt' ? (
+        <a href={postUrl(post)}>{post.data.title}</a>
+      ) : (
+        post.data.title
+      )}
     </Title>
     {post.data.tags?.length ? (
       <div class="tags post-tags" aria-label="Post tags">
-        {post.data.tags.map((tag) => <span>{tag}</span>)}
+        {post.data.tags.map((tag) => (
+          <span>{tag}</span>
+        ))}
       </div>
     ) : null}
   </header>

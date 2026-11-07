@@ -10,7 +10,8 @@ const factory: CacheProviderFactory = (config) => {
     setHeaders(options, request) {
       const headers = provider.setHeaders!(options, request)
       const policy = headers.get('Cloudflare-CDN-Cache-Control')
-      if (policy) headers.set('Cloudflare-CDN-Cache-Control', `${policy}, stale-if-error=0`)
+      if (policy)
+        headers.set('Cloudflare-CDN-Cache-Control', `${policy}, stale-if-error=0`)
       return headers
     },
   }

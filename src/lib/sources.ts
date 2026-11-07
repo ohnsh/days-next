@@ -11,7 +11,10 @@ export interface GithubRepo {
 export interface GithubCommit {
   sha: string
   html_url: string
-  commit: { message: string; author: { name: string; email: string; date: string } | null }
+  commit: {
+    message: string
+    author: { name: string; email: string; date: string } | null
+  }
 }
 export interface YoutubeItem {
   id: string
@@ -61,7 +64,9 @@ const months = [
 ]
 export function youtubeDay(title: string, publishedAt: string) {
   const publishedDay = dayFromInstant(publishedAt)
-  const numeric = /\b(?<month>\d{1,2})\/(?<day>\d{1,2})(?:\/(?<year>\d{4}))?\b/.exec(title)
+  const numeric = /\b(?<month>\d{1,2})\/(?<day>\d{1,2})(?:\/(?<year>\d{4}))?\b/.exec(
+    title
+  )
   const named = new RegExp(
     `\\b(?<month>${months.map((m) => `${m}|${m.slice(0, 3)}`).join('|')})\\.? (?<day>\\d{1,2})\\b(?:,? (?<year>\\d{4}))?`,
     'i'
@@ -72,11 +77,15 @@ export function youtubeDay(title: string, publishedAt: string) {
     ? Number(match.groups.month)
     : months.findIndex((m) => m.startsWith(match.groups!.month.toLowerCase())) + 1
   const year = Number(publishedDay.slice(0, 4))
-  const years = match.groups.year ? [Number(match.groups.year)] : [year - 1, year, year + 1]
+  const years = match.groups.year
+    ? [Number(match.groups.year)]
+    : [year - 1, year, year + 1]
   const candidates = years.flatMap((y) => {
     try {
       return [
-        plainDay(`${y}-${String(month).padStart(2, '0')}-${match.groups!.day.padStart(2, '0')}`),
+        plainDay(
+          `${y}-${String(month).padStart(2, '0')}-${match.groups!.day.padStart(2, '0')}`
+        ),
       ]
     } catch {
       return []
@@ -92,7 +101,9 @@ export function youtubeDay(title: string, publishedAt: string) {
 }
 export function youtubeTags(title: string, description: string) {
   const tags = new Set<string>()
-  for (const { segment } of new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(title)) {
+  for (const { segment } of new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(
+    title
+  )) {
     if (/\p{Emoji}/u.test(segment)) tags.add(segment)
     else break
   }

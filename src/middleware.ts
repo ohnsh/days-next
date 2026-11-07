@@ -26,7 +26,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (!['GET', 'HEAD'].includes(context.request.method)) {
     if (
       context.request.headers.get('Origin') !== context.url.origin ||
-      context.request.headers.get('Content-Type')?.split(';')[0].trim() !== 'application/json'
+      context.request.headers.get('Content-Type')?.split(';')[0].trim() !==
+        'application/json'
     ) {
       return new Response('Same-origin JSON required', {
         status: 403,

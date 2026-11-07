@@ -25,7 +25,11 @@ export async function handleYoutubeRequest(
     if (cache?.enabled) cache.set(false)
     return new Response('Method not allowed', {
       status: 405,
-      headers: { ...corsHeaders, Allow: 'GET, HEAD, OPTIONS', 'Cache-Control': 'no-store' },
+      headers: {
+        ...corsHeaders,
+        Allow: 'GET, HEAD, OPTIONS',
+        'Cache-Control': 'no-store',
+      },
     })
   }
   const url = new URL(request.url)
@@ -50,7 +54,9 @@ export async function handleYoutubeRequest(
       headers: { ...corsHeaders, 'Cache-Control': 'public, max-age=0, must-revalidate' },
     })
   } catch (error) {
-    console.error(JSON.stringify({ event: 'youtube-api-error', day, message: String(error) }))
+    console.error(
+      JSON.stringify({ event: 'youtube-api-error', day, message: String(error) })
+    )
     if (cache?.enabled) cache.set(false)
     return Response.json(
       { error: 'YouTube items are temporarily unavailable' },

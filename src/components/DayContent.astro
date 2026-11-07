@@ -17,7 +17,8 @@ const posts = await getPostsForDay(day.day)
 const commits = day.items.filter((i) => i.source === 'github')
 const videos = day.items.filter((i) => i.source === 'youtube')
 const repos = new Map<string, SourceItem[]>()
-for (const item of commits) repos.set(item.group, [...(repos.get(item.group) ?? []), item])
+for (const item of commits)
+  repos.set(item.group, [...(repos.get(item.group) ?? []), item])
 const videoCategoryOrder = ['🎙️', '🤳', '🐶', '🏃‍♂️', '🎣', '🚗']
 const videoCategories = new Map<string, SourceItem[]>()
 for (const video of videos) {
@@ -180,7 +181,9 @@ const count = posts.length + day.events.length + cameras.length + day.items.leng
       </div>
     </section>
   )}
-  {!count && !day.warnings.length && <p class="empty">Nothing gathered for this day yet.</p>}
+  {!count && !day.warnings.length && (
+    <p class="empty">Nothing gathered for this day yet.</p>
+  )}
 </article>
 
 <style>
@@ -203,12 +206,16 @@ const count = posts.length + day.events.length + cameras.length + day.items.leng
 
   function updateView() {
     const showAll = getShowAll()
-    document.querySelectorAll<HTMLInputElement>('[data-vod-show-all]').forEach((input) => {
-      input.checked = showAll
-    })
-    document.querySelectorAll<HTMLElement>('[data-vod-default="false"]').forEach((card) => {
-      card.hidden = !showAll
-    })
+    document
+      .querySelectorAll<HTMLInputElement>('[data-vod-show-all]')
+      .forEach((input) => {
+        input.checked = showAll
+      })
+    document
+      .querySelectorAll<HTMLElement>('[data-vod-default="false"]')
+      .forEach((card) => {
+        card.hidden = !showAll
+      })
     document.querySelectorAll<HTMLElement>('[data-vod-empty]').forEach((message) => {
       message.hidden = showAll
     })
@@ -216,7 +223,10 @@ const count = posts.length + day.events.length + cameras.length + day.items.leng
   subscribeShowAll(updateView)
   updateView()
   document.addEventListener('change', (event) => {
-    if (event.target instanceof HTMLInputElement && event.target.matches('[data-vod-show-all]')) {
+    if (
+      event.target instanceof HTMLInputElement &&
+      event.target.matches('[data-vod-show-all]')
+    ) {
       setShowAll(event.target.checked)
     }
   })

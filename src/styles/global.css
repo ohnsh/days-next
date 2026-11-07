@@ -285,7 +285,7 @@ main,
   color: var(--accent);
 }
 
-.intro>p:last-child {
+.intro > p:last-child {
   color: var(--muted);
   max-width: 360px;
   font-size: 1rem;
@@ -295,7 +295,7 @@ main,
   padding: 40px 0 48px;
   border-bottom: 1px solid var(--line);
 
-  .intro+& {
+  .intro + & {
     padding-top: 0;
   }
 }
@@ -333,7 +333,7 @@ main,
   white-space: nowrap;
 }
 
-.day-section+.day-section {
+.day-section + .day-section {
   margin-top: 32px;
 }
 
@@ -391,8 +391,8 @@ main,
   min-width: 0;
 }
 
-.camera-card>vod-player,
-.camera-card>div {
+.camera-card > vod-player,
+.camera-card > div {
   border-radius: 5px;
   overflow: hidden;
 }
@@ -435,11 +435,11 @@ main,
   margin-top: 10px;
 }
 
-.video-category+.video-category {
+.video-category + .video-category {
   margin-top: 24px;
 }
 
-.video-category>h4 {
+.video-category > h4 {
   margin: 0 0 12px;
   color: var(--muted);
   font-size: 0.8rem;
@@ -502,7 +502,7 @@ days-youtube iframe {
   background: var(--panel);
 }
 
-.repo-list details+details {
+.repo-list details + details {
   border-top: 1px solid var(--line);
 }
 
@@ -613,7 +613,7 @@ days-youtube iframe {
   padding-top: 40px;
 }
 
-.page-intro>a {
+.page-intro > a {
   font-size: 0.85rem;
 }
 
@@ -670,7 +670,7 @@ days-youtube iframe {
   overflow-wrap: anywhere;
 }
 
-.post-content> :last-child {
+.post-content > :last-child {
   margin-bottom: 0;
 }
 
@@ -831,7 +831,7 @@ days-youtube iframe {
   line-height: 1.55;
 }
 
-.transcript-item+.transcript-item {
+.transcript-item + .transcript-item {
   border-top: 1px solid var(--line);
 }
 
@@ -873,7 +873,6 @@ days-youtube iframe {
 }
 
 @media (max-width: 700px) {
-
   main,
   .site-footer {
     width: calc(100% - 32px);

@@ -33,5 +33,7 @@ if (mode === 'excerpt') {
 
 <div class="post-content" set:html={contentHtml} />
 {mode === 'excerpt' && hasMore && (
-  <a class="read-more" href={postUrl(post)}>Read full post →</a>
+  <a class="read-more" href={postUrl(post)}>
+    Read full post →
+  </a>
 )}

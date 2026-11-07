@@ -13,7 +13,9 @@ const root = resolve(process.argv[2] || '../days/.days')
 const repos: GithubRepo[] = await Bun.file(`${root}/github/repos.json`).json()
 const commits: SourceItem[] = []
 for (const repo of repos.filter((r) => !r.private)) {
-  const rows: GithubCommit[] = await Bun.file(`${root}/github/commits/${repo.name}.json`).json()
+  const rows: GithubCommit[] = await Bun.file(
+    `${root}/github/commits/${repo.name}.json`
+  ).json()
   for (const commit of rows) {
     const item = githubItem(repo, commit)
     if (item) commits.push(item)

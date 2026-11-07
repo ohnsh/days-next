@@ -6,7 +6,9 @@ try {
     'CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)'
   )
   const applied = new Set(
-    (await db.execute('SELECT name FROM schema_migrations')).rows.map((r) => String(r.name))
+    (await db.execute('SELECT name FROM schema_migrations')).rows.map((r) =>
+      String(r.name)
+    )
   )
   const directory = new URL('../migrations/', import.meta.url)
   for (const name of (await readdir(directory))

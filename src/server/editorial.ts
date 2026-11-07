@@ -24,7 +24,8 @@ export function eventInput(value: unknown): EventInput {
     throw new InputError('Expected an event')
   const v = value as Record<string, unknown>
   const text = (key: string, max: number) => {
-    if (typeof v[key] !== 'string' || v[key].length > max) throw new InputError(`Invalid ${key}`)
+    if (typeof v[key] !== 'string' || v[key].length > max)
+      throw new InputError(`Invalid ${key}`)
     return (v[key] as string).trim()
   }
   const id = text('id', 100)
@@ -64,7 +65,8 @@ export function eventInput(value: unknown): EventInput {
   if (typeof v.isPublic !== 'boolean') throw new InputError('Invalid visibility')
   if (!Number.isSafeInteger(v.version) || Number(v.version) < 0)
     throw new InputError('Invalid version')
-  if (!id && Number(v.version) !== 0) throw new InputError('New events must have version 0')
+  if (!id && Number(v.version) !== 0)
+    throw new InputError('New events must have version 0')
   return {
     id,
     version: Number(v.version),
@@ -152,22 +154,33 @@ export async function readAdminState(
     ? undefined
     : 'VOD_ADMIN_API_TOKEN is not configured. Public VOD data is shown; event editing is unavailable.'
   const [events, tags, cameras] = await Promise.all([
-    request<AdminArchiveEvent[]>(base, `/api/${token ? 'admin/' : ''}events?${params}`, token),
+    request<AdminArchiveEvent[]>(
+      base,
+      `/api/${token ? 'admin/' : ''}events?${params}`,
+      token
+    ),
     request<EventTag[]>(base, `/api/${token ? 'admin/' : ''}tags`, token),
-    request<{ id: string; name: string }[]>(base, `/api/${token ? 'admin/' : ''}views`, token),
+    request<{ id: string; name: string }[]>(
+      base,
+      `/api/${token ? 'admin/' : ''}views`,
+      token
+    ),
   ])
   return { events: events.map(mapEvent), tags, cameras, warning }
 }
 
 async function requireToken(token: string) {
-  if (!token) throw new UnavailableError('VOD_ADMIN_API_TOKEN is required to change VOD events.')
+  if (!token)
+    throw new UnavailableError('VOD_ADMIN_API_TOKEN is required to change VOD events.')
 }
 
 async function resolveTags(names: string[], base: string, token: string) {
   let tags = await request<EventTag[]>(base, '/api/admin/tags', token)
   const ids: string[] = []
   for (const name of names) {
-    let tag = tags.find((item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase())
+    let tag = tags.find(
+      (item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase()
+    )
     if (!tag) {
       try {
         const created = await request<{ id: string }>(base, '/api/admin/tags', token, {
@@ -180,7 +193,9 @@ async function resolveTags(names: string[], base: string, token: string) {
       } catch (error) {
         if (!(error instanceof ConflictError)) throw error
         tags = await request<EventTag[]>(base, '/api/admin/tags', token)
-        tag = tags.find((item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase())
+        tag = tags.find(
+          (item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase()
+        )
         if (!tag) throw error
       }
     }
@@ -189,7 +204,12 @@ async function resolveTags(names: string[], base: string, token: string) {
   return ids
 }
 
-export async function saveEvent(value: unknown, _actor: string, base: string, token: string) {
+export async function saveEvent(
+  value: unknown,
+  _actor: string,
+  base: string,
+  token: string
+) {
   const event = eventInput(value)
   await requireToken(token)
   const tagIds = await resolveTags(event.tags, base, token)

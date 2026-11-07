@@ -35,7 +35,8 @@ const warning = vodResult.error || vodResult.data.warning
   <section class="page-intro">
     <h1>Days Admin</h1>
     <p class="muted">
-      Signed in as {Astro.locals.admin?.email}. Events and recording protection are managed by VOD.
+      Signed in as {Astro.locals.admin?.email}. Events and recording protection are
+      managed by VOD.
     </p>
     {warning && <p class="notice">{warning}</p>}
   </section>
@@ -63,7 +64,13 @@ const warning = vodResult.error || vodResult.data.warning
       </label>
       <label>
         End <span class="muted">Chicago local time</span>
-        <input type="datetime-local" name="end" step="0.001" value={`${selected}T13:00`} required />
+        <input
+          type="datetime-local"
+          name="end"
+          step="0.001"
+          value={`${selected}T13:00`}
+          required
+        />
       </label>
       <label>
         Camera scope
@@ -120,8 +127,8 @@ const warning = vodResult.error || vodResult.data.warning
         <p class="notice">Run the seed or sync command to import source data.</p>
       )}
       <p class="muted">
-        Imports run with <code>bun run sync</code>. The site reads the latest completed import
-        immediately.
+        Imports run with <code>bun run sync</code>. The site reads the latest completed
+        import immediately.
       </p>
       <h2>Recent events</h2>
       <form class="inline-form" method="get">
@@ -134,7 +141,8 @@ const warning = vodResult.error || vodResult.data.warning
         {events.map((event) => (
           <article>
             <p class="eyebrow">
-              {event.day} · {event.isPublic ? 'Public' : 'Private'} · {event.cameraScope} cameras
+              {event.day} · {event.isPublic ? 'Public' : 'Private'} · {event.cameraScope}{' '}
+              cameras
             </p>
             <h3>{event.title}</h3>
             <p class="prewrap">{event.notes}</p>
@@ -168,14 +176,17 @@ const warning = vodResult.error || vodResult.data.warning
   const input = (name: string) => form.elements.namedItem(name) as HTMLInputElement
   const select = (name: string) => {
     const element = form.elements.namedItem(name)
-    if (!(element instanceof HTMLSelectElement)) throw new Error(`Missing select: ${name}`)
+    if (!(element instanceof HTMLSelectElement))
+      throw new Error(`Missing select: ${name}`)
     return element
   }
   const toEpoch = (value: string) =>
-    Temporal.PlainDateTime.from(value).toZonedDateTime(timezone, { disambiguation: 'reject' })
-      .epochMilliseconds
+    Temporal.PlainDateTime.from(value).toZonedDateTime(timezone, {
+      disambiguation: 'reject',
+    }).epochMilliseconds
   const fromEpoch = (value: number) => {
-    const local = Temporal.Instant.fromEpochMilliseconds(value).toZonedDateTimeISO(timezone)
+    const local =
+      Temporal.Instant.fromEpochMilliseconds(value).toZonedDateTimeISO(timezone)
     return `${local.toPlainDate()}T${local.toPlainTime().toString({ smallestUnit: 'millisecond' })}`
   }
 
@@ -207,7 +218,10 @@ const warning = vodResult.error || vodResult.data.warning
         start: toEpoch(input('start').value),
         end: toEpoch(input('end').value),
         cameraScope: select('cameraScope').value,
-        cameraIds: Array.from(select('cameraIds').selectedOptions, (option) => option.value),
+        cameraIds: Array.from(
+          select('cameraIds').selectedOptions,
+          (option) => option.value
+        ),
         tags: input('tags')
           .value.split(',')
           .map((tag) => tag.trim())
@@ -231,7 +245,8 @@ const warning = vodResult.error || vodResult.data.warning
       input('end').value = fromEpoch(event.end)
       select('cameraScope').value = event.cameraScope
       const selected = new Set(event.cameraIds as string[])
-      for (const option of select('cameraIds').options) option.selected = selected.has(option.value)
+      for (const option of select('cameraIds').options)
+        option.selected = selected.has(option.value)
       input('tags').value = event.tags.map((tag: { name: string }) => tag.name).join(', ')
       input('protect').checked = Boolean(event.protect)
       input('isPublic').checked = Boolean(event.isPublic)

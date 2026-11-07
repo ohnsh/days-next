@@ -1,6 +1,9 @@
 import { plainDay } from './dates'
 
-export type PosterOverrides = Record<string, { time?: string; cameras?: Record<string, string> }>
+export type PosterOverrides = Record<
+  string,
+  { time?: string; cameras?: Record<string, string> }
+>
 
 export function validatePosterOverrides(value: unknown): PosterOverrides {
   const fail = (path: string, message: string): never => {
@@ -25,13 +28,19 @@ export function validatePosterOverrides(value: unknown): PosterOverrides {
     }
     const override = object(entry, day)
     for (const key of Object.keys(override)) {
-      if (key !== 'time' && key !== 'cameras') fail(`${day}.${key}`, 'is an unknown field')
+      if (key !== 'time' && key !== 'cameras')
+        fail(`${day}.${key}`, 'is an unknown field')
     }
     if ('time' in override) time(override.time, `${day}.time`)
     if ('cameras' in override) {
-      for (const [camera, at] of Object.entries(object(override.cameras, `${day}.cameras`))) {
+      for (const [camera, at] of Object.entries(
+        object(override.cameras, `${day}.cameras`)
+      )) {
         if (!camera.trim() || camera !== camera.trim()) {
-          fail(`${day}.cameras`, 'must use nonempty camera IDs without surrounding whitespace')
+          fail(
+            `${day}.cameras`,
+            'must use nonempty camera IDs without surrounding whitespace'
+          )
         }
         time(at, `${day}.cameras.${camera}`)
       }
@@ -40,7 +49,11 @@ export function validatePosterOverrides(value: unknown): PosterOverrides {
   return value as PosterOverrides
 }
 
-export function posterOverrideTime(overrides: PosterOverrides, day: string, camera: string) {
+export function posterOverrideTime(
+  overrides: PosterOverrides,
+  day: string,
+  camera: string
+) {
   const entry = Object.hasOwn(overrides, day) ? overrides[day] : undefined
   return entry?.cameras && Object.hasOwn(entry.cameras, camera)
     ? entry.cameras[camera]
