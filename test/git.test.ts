@@ -215,14 +215,14 @@ test('shared database checkpoints reject stale/divergent refs, removals and miss
     expect(await snapshot()).toEqual(saved)
 
     await f.configure({ path: 'missing-directory' })
-    await expect(syncGit(f.manifest, { db, force: true })).rejects.toThrow()
+    await expect(syncGit(f.manifest, { db, force: 'all' })).rejects.toThrow()
     expect(await snapshot()).toEqual(saved)
     await f.configure({ refs: ['main', 'missing'] })
-    await expect(syncGit(f.manifest, { db, force: true })).rejects.toThrow()
+    await expect(syncGit(f.manifest, { db, force: 'all' })).rejects.toThrow()
     expect(await snapshot()).toEqual(saved)
 
     await f.configure()
-    await syncGit(f.manifest, { db, force: true })
+    await syncGit(f.manifest, { db, force: ['fixture'] })
     expect((await db.execute('SELECT sha FROM git_sync_refs')).rows[0].sha).not.toBe(
       latest
     )
@@ -231,14 +231,92 @@ test('shared database checkpoints reject stale/divergent refs, removals and miss
     await syncGit(f.manifest, { db })
     await f.configure()
     await expect(syncGit(f.manifest, { db })).rejects.toThrow('removed ref')
-    await syncGit(f.manifest, { db, force: true })
+    await syncGit(f.manifest, { db, force: ['fixture'] })
     await Bun.write(f.manifest, '[]')
     await expect(syncGit(f.manifest, { db })).rejects.toThrow('requires --force')
-    await syncGit(f.manifest, { db, force: true })
+    await syncGit(f.manifest, { db, force: 'all' })
     expect((await db.execute('SELECT * FROM source_items')).rows).toHaveLength(0)
     expect((await db.execute('SELECT * FROM git_sync_refs')).rows).toHaveLength(0)
   } finally {
     db.close()
+  }
+})
+
+test('scoped force protects other repositories and rolls back the entire sync', async () => {
+  const a = await fixture()
+  const b = await fixture()
+  a.commit('base a')
+  b.commit('base b')
+  const configure = async (extra = {}) => {
+    await Bun.write(
+      a.manifest,
+      JSON.stringify([
+        {
+          id: 'a',
+          path: a.path,
+          defaultBranch: 'main',
+          authors: { emails: ['test@example.com'] },
+        },
+        {
+          id: 'b',
+          path: b.path,
+          defaultBranch: 'main',
+          authors: { emails: ['test@example.com'] },
+          ...extra,
+        },
+      ])
+    )
+  }
+  await configure()
+  const db = createClient({ url: ':memory:' })
+  const snapshot = async () =>
+    Promise.all(
+      ['source_items', 'git_sync_refs', 'sync_runs'].map(
+        async (table) => (await db.execute(`SELECT * FROM ${table}`)).rows
+      )
+    )
+  try {
+    for (const name of ['001_days', '002_git_source', '003_git_refs'])
+      await db.executeMultiple(await Bun.file(`migrations/${name}.sql`).text())
+    await syncGit(a.manifest, { db })
+    a.git('commit', '--amend', '--allow-empty', '-m', 'rewritten a')
+    // b loses feed records without changing its ref, exercising the separate deletion guard.
+    await configure({ authors: { emails: [] } })
+    const saved = await snapshot()
+    await expect(syncGit(a.manifest, { db, force: ['a'] })).rejects.toThrow(
+      'b: 1 previously imported'
+    )
+    expect(await snapshot()).toEqual(saved)
+    await syncGit(a.manifest, { db, force: ['a', 'b'] })
+
+    // Even an excluded commit's ancestry in b remains protected when only a is forced.
+    b.git('commit', '--amend', '--allow-empty', '-m', 'rewritten b')
+    const beforeRewrite = await snapshot()
+    await expect(syncGit(a.manifest, { db, force: ['a'] })).rejects.toThrow(
+      'b refs/heads/main'
+    )
+    expect(await snapshot()).toEqual(beforeRewrite)
+    await syncGit(a.manifest, { db, force: 'all' })
+
+    // A removed ref in b also cannot be authorized by forcing a.
+    b.git('branch', 'topic')
+    await configure({ refs: ['main', 'topic'], authors: { emails: [] } })
+    await syncGit(a.manifest, { db })
+    await configure({ authors: { emails: [] } })
+    await expect(syncGit(a.manifest, { db, force: ['a'] })).rejects.toThrow(
+      'b: removed ref'
+    )
+    await syncGit(a.manifest, { db, force: ['b'] })
+  } finally {
+    db.close()
+  }
+})
+
+test('sync CLI rejects force without an explicit valid scope', () => {
+  for (const arg of ['--force', '--force=', '--force=a,', '--force=all,a']) {
+    const result = Bun.spawnSync(['bun', 'scripts/sync-git.ts', arg])
+    expect(result.exitCode).not.toBe(0)
+    expect(result.stderr.toString()).toContain('Usage: bun run sync:git')
   }
 })
 
@@ -254,7 +332,7 @@ test('legacy imports cannot lose records when establishing the first ref checkpo
     f.git('commit', '--amend', '--allow-empty', '-m', 'rewritten')
     await expect(syncGit(f.manifest, { db })).rejects.toThrow('previously imported')
     expect((await db.execute('SELECT * FROM git_sync_refs')).rows).toHaveLength(0)
-    await syncGit(f.manifest, { db, force: true })
+    await syncGit(f.manifest, { db, force: ['fixture'] })
   } finally {
     db.close()
   }

@@ -254,14 +254,17 @@ export async function collectGit(
 
 export async function syncGit(
   manifest: string,
-  options: { force?: boolean; db?: Client; cache?: string } = {}
+  options: { force?: 'all' | string[]; db?: Client; cache?: string } = {}
 ) {
+  const forced = (repository: string) =>
+    options.force === 'all' || options.force?.includes(repository) === true
   // Any missing repository/ref or failed fetch aborts here, including with --force.
   const { items, checkpoints } = await collectGitSnapshot(manifest, options.cache)
   return replaceSource('git', items, options.db, async (tx, existing) => {
     const previous = await tx.execute('SELECT repository, ref, sha FROM git_sync_refs')
     const problems: string[] = []
     for (const row of previous.rows) {
+      if (forced(String(row.repository))) continue
       const current = checkpoints.find(
         (entry) => entry.repository === row.repository && entry.ref === row.ref
       )
@@ -273,11 +276,21 @@ export async function syncGit(
     }
     // Also protects pre-checkpoint imports and author-filter/configuration changes.
     const ids = new Set(items.map((item) => item.id))
-    const removed = [...existing.keys()].filter((id) => !ids.has(id))
-    if (removed.length)
-      problems.push(`${removed.length} previously imported commit(s) would be removed`)
-    if (problems.length && !options.force)
-      throw new Error(`Git sync requires --force:\n${problems.join('\n')}`)
+    const removed = new Map<string, number>()
+    for (const [id, payload] of existing) {
+      if (ids.has(id)) continue
+      const repository = (JSON.parse(payload) as SourceItem).group
+      if (forced(repository)) continue
+      removed.set(repository, (removed.get(repository) ?? 0) + 1)
+    }
+    for (const [repository, count] of removed)
+      problems.push(
+        `${repository}: ${count} previously imported commit(s) would be removed`
+      )
+    if (problems.length)
+      throw new Error(
+        `Git sync requires --force=<repository IDs> or --force=all:\n${problems.join('\n')}`
+      )
     // Checkpoints and feed rows commit together, under the same write transaction.
     await tx.execute('DELETE FROM git_sync_refs')
     for (const { repository, ref, sha } of checkpoints)

@@ -169,7 +169,9 @@ the public feed. Run:
 ```sh
 bun run sync:git                       # git-repositories.yaml
 bun run sync:git /path/to/manifest.yaml
-bun run sync:git --force               # accept non-fast-forward changes/removals
+bun run sync:git --force=days-next     # accept changes/removals only for this repository
+bun run sync:git --force=days-next,other-repo
+bun run sync:git --force=all           # accept changes/removals for every repository
 ```
 
 The existing `sync`, `sync github`, and `sync --full` commands retain their existing behavior;
@@ -209,21 +211,26 @@ Every run scans the complete history reachable from the selected branch tips and
 the entire Git source atomically after all repositories succeed. Unchanged rows retain their
 timestamps. Per-repository/ref tips are stored in the shared Days database, atomically with
 the feed rows. Each previously synced tip must remain reachable from that same ref's new tip:
-a behind checkout, divergent/rebased branch, or unavailable prior commit requires `--force`.
+a behind checkout, divergent/rebased branch, or unavailable prior commit requires `--force=<id>`.
 This check includes commits excluded by author filters. Removed repositories/refs and any
-removal of previously imported feed records also require `--force`. Adding refs and updating
+removal of previously imported feed records also require `--force=<id>`. Adding refs and updating
 labels after a fast-forward merge do not.
 
+Force requires a comma-separated list of repository IDs; bare `--force` is rejected.
+Only listed repositories may bypass these checks. A problem in any other repository still
+aborts the entire sync. Use `--force=all` explicitly to bypass checks for every repository.
+
 A missing configured repository/ref, unset path variable, shallow repository, or failed fetch
-aborts the entire import without changing database records, **even with `--force`**. Removing
+aborts the entire import without changing database records, **even with `--force=all`**. Removing
 an entry from the manifest is different: it intentionally removes its history, requiring
-`--force`. An empty manifest can clear the Git source with `--force`.
+`--force=<removed-id>` or `--force=all`. An empty manifest can clear the Git source with `--force=all`.
 
 Run `bun run db:migrate` when upgrading to install the checkpoint table. On the first sync
 after upgrading, existing feed records are protected against removal, and current ref tips
 establish the baseline. Previous per-ref ancestry cannot be reconstructed from old feed rows
 alone. Use an up-to-date checkout for this first run. Subsequent checks work across machines
-that target the same database; `--force` accepts the new snapshot as the next baseline.
+that target the same database; scoped force accepts the selected repositories' new snapshots as
+the next baseline.
 
 Commits shared by selected refs appear once per repository. Commits outside default-branch
 history display labels for every selected topic branch that reaches them. Labels disappear
