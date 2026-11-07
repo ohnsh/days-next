@@ -16,6 +16,7 @@
     "db:migrate": "bun run scripts/migrate.ts",
     "db:seed": "bun run scripts/seed.ts",
     "sync": "bun run scripts/sync.ts",
+    "sync:git": "bun run scripts/sync-git.ts",
     "sync:full": "bun run scripts/sync.ts --full",
     "deploy": "astro build && wrangler deploy"
   },

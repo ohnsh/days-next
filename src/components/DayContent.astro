@@ -14,11 +14,13 @@ const { day, expanded = false } = Astro.props
 const cameras = day.cameras
 const hasDefaultCameras = cameras.some((camera) => isDefaultView(camera.id))
 const posts = await getPostsForDay(day.day)
-const commits = day.items.filter((i) => i.source === 'github')
+const commits = day.items.filter((i) => i.source === 'github' || i.source === 'git')
 const videos = day.items.filter((i) => i.source === 'youtube')
 const repos = new Map<string, SourceItem[]>()
-for (const item of commits)
-  repos.set(item.group, [...(repos.get(item.group) ?? []), item])
+for (const item of commits) {
+  const group = `${item.group} (${item.source === 'github' ? 'GitHub' : 'Git'})`
+  repos.set(group, [...(repos.get(group) ?? []), item])
+}
 const videoCategoryOrder = ['🎙️', '🤳', '🐶', '🏃‍♂️', '🎣', '🚗']
 const videoCategories = new Map<string, SourceItem[]>()
 for (const video of videos) {
@@ -156,7 +158,7 @@ const count = posts.length + day.events.length + cameras.length + day.items.leng
   {commits.length > 0 && (
     <section class="day-section">
       <h3>
-        <span class="section-dot green"></span>GitHub commits{' '}
+        <span class="section-dot green"></span>Git commits{' '}
         <span class="section-meta">{commits.length} commits</span>
       </h3>
       <div class="repo-list">
@@ -171,8 +173,17 @@ const count = posts.length + day.events.length + cameras.length + day.items.leng
                 .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
                 .map((item) => (
                   <li>
-                    <a href={item.url}>{item.title}</a>
+                    {item.url ? (
+                      <a href={item.url}>{item.title}</a>
+                    ) : (
+                      <span>{item.title}</span>
+                    )}
                     <code>{item.id.split(':').at(-1)?.slice(0, 7)}</code>
+                    {item.branches?.map((branch) => (
+                      <span class="pill" title="Not reachable from the default branch">
+                        {branch}
+                      </span>
+                    ))}
                   </li>
                 ))}
             </ul>

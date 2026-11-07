@@ -1,15 +1,16 @@
 export interface SourceItem {
   id: string
-  source: 'github' | 'youtube'
+  source: 'github' | 'git' | 'youtube'
   day: string
   title: string
-  url: string
+  url?: string
   description: string
   occurredAt: string
   group: string
   tags: string[]
   thumbnail?: string
   isShort?: boolean
+  branches?: string[]
 }
 export interface EventTag {
   id: string

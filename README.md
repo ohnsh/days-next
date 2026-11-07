@@ -159,6 +159,58 @@ GitHub imports only public repositories and retains the original author-matching
 repository identity and SHA. YouTube preserves title-based day assignment, emoji/description tags,
 and Shorts classification. Import data is plain text rendered with Astro escaping.
 
+## Git repository prototype
+
+Git imports are a separate source from GitHub, with their own IDs and sync status. Run
+`bun run db:migrate` first, then copy `git-repositories.example.json` to the ignored
+`git-repositories.json` and edit its entries. Each entry explicitly opts a repository into
+the public feed. Run:
+
+```sh
+bun run sync:git                       # git-repositories.json
+bun run sync:git /path/to/manifest.json
+```
+
+The existing `sync`, `sync github`, and `sync --full` commands retain their existing behavior;
+they do not invoke Git imports. Running both importers for the same history intentionally
+produces separate Git and GitHub entries. To switch, stop running the GitHub importer;
+its already-imported rows remain until explicitly removed.
+
+The manifest is a JSON array. Entry fields:
+
+- `id`: stable repository identity used in `git:<id>:<sha>` IDs and feed grouping.
+- Exactly one of `path` (relative to the manifest, or absolute) and `remote` (a Git transport
+  URL, including `user@host:/path/repo.git` or `ssh://…`). Local paths are read without
+  fetching or modifying the working tree. Remotes are fetched into owned bare caches under
+  `.data/git-repositories/`; SSH uses your normal keys/config and noninteractive authentication.
+- `defaultBranch`: optional branch name, such as `main`. Otherwise remote entries discover
+  the remote's symbolic HEAD; local entries use `origin/HEAD` to identify the corresponding
+  local branch, or a bare repository's symbolic HEAD. A working checkout's current branch
+  is not assumed to be its default. If discovery fails, specify this field.
+- `refs`: optional list of branch names or full `refs/heads/…` / `refs/remotes/…` names.
+  Omission selects only the default branch. An explicit list **must include the default
+  branch**, alongside every desired topic branch. Short names mean local branches, including
+  in remote caches. Explicit remote-tracking refs work for local paths; set `defaultBranch`
+  to the matching full remote-tracking ref when using that mode.
+- `commitUrl`: optional HTTP(S) viewer template containing `{sha}`, e.g.
+  `https://github.com/OWNER/REPO/commit/{sha}`. Without it, titles render without links.
+  The importer does not check whether local/unpushed commits exist in the viewer.
+- `authors`: optional `{ "names": [...], "emails": [...] }` exact, case-insensitive OR
+  matches. Omission retains the existing personal GitHub author name/domain rules; empty
+  arrays match nobody. Author dates are mapped to America/Chicago as before.
+
+Every run scans the complete history reachable from the selected branch tips and reconciles
+the entire Git source atomically after all repositories succeed. Unchanged rows retain their
+timestamps. Removed manifest entries, removed refs, and rewritten commits disappear from the
+feed; a missing configured ref or failed fetch aborts publication instead. Shallow repositories
+are rejected. An empty manifest explicitly clears the Git source.
+
+Commits shared by selected refs appear once per repository. Commits outside default-branch
+history display labels for every selected topic branch that reaches them. Labels disappear
+when the commit becomes reachable from the default branch. GitHub imports remain independent.
+As with other CLI imports, rendered pages update through cache expiry (historical pages can
+remain cached for seven days) or the existing admin cache-purge endpoint.
+
 ## Administration and VOD ownership
 
 In `astro dev`, administration is available locally and edits are attributed to `local-dev`. This is
