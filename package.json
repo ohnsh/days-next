@@ -4,7 +4,6 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "dev:prod-vod": "test -f .dev.vars.prod-vod && CLOUDFLARE_ENV=prod-vod astro dev",
     "db:dev": "mkdir -p .data && turso dev --db-file .data/days.db --port 8080",
     "types": "wrangler types",
     "build": "astro build",

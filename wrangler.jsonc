@@ -16,7 +16,4 @@
     "enabled": true,
     "traces": { "enabled": true, "head_sampling_rate": 0.01 },
   },
-  "env": {
-    "prod-vod": { "routes": [], "vars": { "VOD_BASE_URL": "https://vod.ohn.sh" } },
-  },
 }
