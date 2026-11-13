@@ -2,6 +2,7 @@
 import '../styles/global.css'
 import { dayUrl, shiftDay, today } from '../lib/dates'
 import CalendarPicker from '../components/CalendarPicker'
+import DaysLogo from '../components/DaysLogo.astro'
 import { socialMeta, type SocialMetadata } from 'og-snap/meta'
 interface Props {
   title?: string
@@ -29,20 +30,7 @@ const currentToday = today()
     <header class="site-header">
       <div class="header-inner">
         <a class="wordmark" href="/" aria-label="Days — Today">
-          <svg
-            aria-hidden="true"
-            width="30"
-            height="30"
-            viewBox="-2 -2 28 28"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.75"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect width="18" height="18" x="3" y="3" rx="2" />
-            <path d="M17 12h-2l-2 5-2-10-2 5H7" />
-          </svg>
+          <DaysLogo />
           <span>days.</span>
         </a>
         <days-calendar-nav>

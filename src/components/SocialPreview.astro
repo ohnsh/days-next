@@ -1,5 +1,6 @@
 ---
 import { dayTitle } from '../lib/dates'
+import DaysLogo from './DaysLogo.astro'
 import type { resolveSocialSelection } from '../server/social'
 interface Props {
   selection: Awaited<ReturnType<typeof resolveSocialSelection>>
@@ -11,7 +12,10 @@ const { posters, single, total, day } = selection
 <div id="social-preview" data-preview-state="loading" class:list={[{ single }]}>
   {!single && (
     <header>
-      <strong>days.</strong>
+      <strong>
+        <DaysLogo size={38} />
+        days.
+      </strong>
       <span>{dayTitle(day)}</span>
     </header>
   )}
@@ -63,6 +67,9 @@ const { posters, single, total, day } = selection
     font-size: 25px;
   }
   header strong {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 38px;
     color: var(--accent);
   }
@@ -73,7 +80,9 @@ const { posters, single, total, day } = selection
   .poster-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    align-items: center;
+    container-type: size;
     gap: 16px;
     flex: 1;
     min-height: 0;
@@ -86,12 +95,6 @@ const { posters, single, total, day } = selection
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: 1fr;
   }
-  .poster-grid[data-count='3'] {
-    grid-template-rows: 1fr;
-  }
-  .poster-grid[data-count='4'] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   figure {
     margin: 0;
     min-height: 0;
@@ -99,6 +102,10 @@ const { posters, single, total, day } = selection
     display: flex;
     flex-direction: column;
     gap: 8px;
+    width: 100%;
+    /* Keep the image and caption together, including a height-limited one-poster grid. */
+    max-width: min(100%, calc((100cqh - 32px) * 16 / 9));
+    justify-self: center;
   }
   img {
     width: 100%;
@@ -129,6 +136,17 @@ const { posters, single, total, day } = selection
     aspect-ratio: 16 / 9;
     object-fit: cover;
   }
+  #social-preview:not(.single) figure > img,
+  #social-preview:not(.single) .youtube-poster img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    flex: none;
+  }
+  #social-preview:not(.single) .youtube-poster {
+    flex: none;
+    container-type: normal;
+  }
   figcaption span {
     color: var(--muted);
     font-size: 13px;
@@ -136,6 +154,10 @@ const { posters, single, total, day } = selection
   }
   #social-preview.single {
     padding: 0;
+  }
+  .single figure {
+    max-width: none;
+    height: 100%;
   }
   .single img {
     border-radius: 0;

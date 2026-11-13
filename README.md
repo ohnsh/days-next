@@ -336,9 +336,10 @@ create item pages. An optional `--alt` overrides generated image alt text.
 Preview the composition at `/social/preview?day=2026-11-12`,
 `/social/preview?id=youtube%3AVIDEO_ID`, or
 `/social/preview?day=2026-11-12&camera=quad`. These are fixed 1200×630 poster-only
-pages. Grids show up to six posters, VOD first and then YouTube in the same order
+pages. Grids show one row of up to three posters, VOD first and then YouTube in the same order
 as DayContent, with an overflow count. VOD defaults and poster-time overrides are
-shared with the normal page. Single posters are contained without cropping.
+shared with the normal page. YouTube posters use 16:9 cover frames to crop their
+baked-in letterboxing; VOD posters use contain fitting.
 Missing posters and media outages fail capture; genuinely empty days have a
 date-only composition. `/social/selection.json` resolves CLI selections against
 deployed data. Captures reflect data at preview time, not a frozen database snapshot.

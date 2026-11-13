@@ -92,7 +92,7 @@ export async function resolveSocialSelection(
     throw new SocialSelectionError('--for-day must match the selected content’s day')
   const single = !!(selection.id || selection.camera)
   const total = posters.length
-  posters = posters.slice(0, single ? 1 : 6)
+  posters = posters.slice(0, single ? 1 : 3)
   if (posters.some((poster) => !poster.url))
     throw new SocialSelectionError('A selected poster is unavailable', 503)
   const key = selection.forDay
@@ -127,7 +127,7 @@ export async function resolveSocialSelection(
       day,
       section: selection.section,
       allCameras: selection.allCameras,
-      templateVersion: 1,
+      templateVersion: 2,
       ...(selection.id ? { id: selection.id } : {}),
       ...(selection.camera ? { camera: selection.camera } : {}),
     },
