@@ -18,7 +18,13 @@ const { posters, single, total, day } = selection
   <div class="poster-grid" data-count={posters.length}>
     {posters.map((poster) => (
       <figure>
-        <img src={poster.url} alt={poster.title} loading="eager" />
+        {poster.group === 'YouTube' ? (
+          <div class="youtube-poster">
+            <img src={poster.url} alt={poster.title} loading="eager" />
+          </div>
+        ) : (
+          <img src={poster.url} alt={poster.title} loading="eager" />
+        )}
         {!single && (
           <figcaption>
             <span>{poster.group}</span> {poster.title}
@@ -108,6 +114,20 @@ const { posters, single, total, day } = selection
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 17px;
+  }
+  .youtube-poster {
+    flex: 1;
+    min-height: 0;
+    container-type: size;
+    display: grid;
+    place-items: center;
+  }
+  .youtube-poster img {
+    /* Fit a 16:9 frame into either grid dimension, then crop baked-in letterboxing. */
+    width: min(100cqw, calc(100cqh * 16 / 9));
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
   }
   figcaption span {
     color: var(--muted);
