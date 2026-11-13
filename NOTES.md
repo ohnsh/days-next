@@ -6,35 +6,13 @@ temporary checkout and Worker name.
 
 ## Local development
 
-Requires Node 22.22+, Bun, and the Turso CLI. Keep the sibling `../vod-misc/vod-player-astro`
-component available (it is a local package dependency).
+Astro may automatically background its dev server when launched by an agent; `--ignore-lock` keeps
+it in the foreground for a harness-managed process.
 
-```sh
-bun install
-cp .dev.vars.example .dev.vars
-bun run db:dev
-```
-
-Leave the database server running. In another terminal:
-
-```sh
-bun run db:migrate
-bun run db:seed                 # imports ../days/.days
-bun run dev --host 127.0.0.1
-```
-
-Open <http://127.0.0.1:4321/>. A useful populated example is <http://127.0.0.1:4321/2026/10/19/>.
-`/admin/` provides the editorial workspace. Astro may automatically background its dev server when
-launched by an agent; `--ignore-lock` keeps it in the foreground for a harness-managed process.
-
-The checked-out prototype has already been seeded into `.data/days.db`. All database files,
-screenshots, cached responses, and local credentials are ignored. VOD footage is read from the
-existing public `https://vod.ohn.sh` API; media and players load from their existing public origins.
+VOD footage is read from the existing public `https://vod.ohn.sh` API; media and players load from
+their existing public origins.
 
 ### Connections and credentials
-
-Both the Worker and command-line scripts read `.dev.vars`. Script environment variables supplied
-explicitly by the shell take precedence. Set:
 
 - `DAYS_DATABASE_URL`: local HTTP endpoint, or the new Days Turso database URL.
 - `DAYS_AUTH_TOKEN`: Days database token; empty for the local development server.
@@ -94,11 +72,8 @@ failed; the TTL remains the fallback. Deployments start with a fresh cache.
 
 Authenticated administrators can request targeted invalidation using
 `POST /api/admin/cache?day=2026-10-18`, with same-origin `Origin` and
-`Content-Type: application/json` headers, under the existing Access authentication. This endpoint
-purges rendered Days routes, not VOD's separate response cache. External VOD/import notifications
-are not wired automatically; otherwise new recordings/imports become visible through expiry. Dates
-are in America/Chicago. In development Astro disables route caching and the purge endpoint returns
-`purged: false`.
+`Content-Type: application/json` headers, under the existing Access authentication. In development,
+Astro disables route caching and the purge endpoint returns `purged: false`.
 
 VOD owns query optimization and its discovery API response cache (30 seconds fresh plus 15 seconds
 SWR). The two independent layers can accumulate staleness: allow roughly two minutes under normal
@@ -112,17 +87,12 @@ containing it. Local builds validate headers/configuration, not Cloudflare's dis
 ### VOD views and transcripts
 
 Days discovers published views through `/api/views` and uses view day/calendar endpoints.
-Audio-only views (`mediaType: audio`) are excluded from VOD cards and calendar dots;
-`bedroom` is visible only with **Show all**. This browser preference persists across pages.
-Poster overrides use view IDs; the embedded player's `camera` prop also accepts view IDs.
-Admin discovery uses `/api/admin/views` while event payload fields retain their API names.
 
 Transcripts include audio-only views and attached audio supplied by each view endpoint.
 The combined transcript deduplicates `(recordingId, segmentIndex)` across views, retaining
 the first view in API order and its playback link. Individual view counts and selected-view
 transcripts remain complete; the combined count reflects unique segments. New links use
-`?view=`. Legacy `?source=` links resolve published views first, then physical sources via
-`/api/sources`; missing coverage is empty and unknown timezone is reported rather than guessed.
+`?view=`.
 
 ### Dates
 
@@ -161,10 +131,8 @@ and Shorts classification. Import data is plain text rendered with Astro escapin
 
 ## Git repository prototype
 
-Git imports are a separate source from GitHub, with their own IDs and sync status. Run
-`bun run db:migrate` first, then copy `git-repositories.example.yaml` to the ignored
-`git-repositories.yaml` and edit its entries. Each entry explicitly opts a repository into
-the public feed. Run:
+Git imports are a separate source from GitHub, with their own IDs and sync status. The ignored
+`git-repositories.yaml` explicitly opts repositories into the public feed.
 
 ```sh
 bun run sync:git                       # git-repositories.yaml
@@ -179,8 +147,7 @@ they do not invoke Git imports. Running both importers for the same history inte
 produces separate Git and GitHub entries. To switch, stop running the GitHub importer;
 its already-imported rows remain until explicitly removed.
 
-The manifest is a YAML sequence (existing JSON manifests can still be passed explicitly).
-Entry fields:
+Manifest fields:
 
 - `id`: stable repository identity used in `git:<id>:<sha>` IDs and feed grouping.
 - Exactly one of `path` (repository root, relative to the manifest or absolute) and `remote` (a Git transport
@@ -209,12 +176,10 @@ Entry fields:
 
 Every run scans the complete history reachable from the selected branch tips and reconciles
 the entire Git source atomically after all repositories succeed. Unchanged rows retain their
-timestamps. Per-repository/ref tips are stored in the shared Days database, atomically with
-the feed rows. Each previously synced tip must remain reachable from that same ref's new tip:
-a behind checkout, divergent/rebased branch, or unavailable prior commit requires `--force=<id>`.
-This check includes commits excluded by author filters. Removed repositories/refs and any
-removal of previously imported feed records also require `--force=<id>`. Adding refs and updating
-labels after a fast-forward merge do not.
+timestamps. Per-repository/ref tips are stored in the shared Days database. Each previously synced
+tip must remain reachable from that same ref's new tip: a behind checkout, divergent/rebased
+branch, or unavailable prior commit requires `--force=<id>`. Removed repositories/refs also require
+`--force=<id>`.
 
 Force requires a comma-separated list of repository IDs; bare `--force` is rejected.
 Only listed repositories may bypass these checks. A problem in any other repository still
@@ -227,40 +192,10 @@ an entry from the manifest is different: it intentionally removes its history, r
 
 Run `bun run db:migrate` when upgrading to install the checkpoint table. On the first sync
 after upgrading, existing feed records are protected against removal, and current ref tips
-establish the baseline. Previous per-ref ancestry cannot be reconstructed from old feed rows
-alone. Use an up-to-date checkout for this first run. Subsequent checks work across machines
-that target the same database; scoped force accepts the selected repositories' new snapshots as
-the next baseline.
+establish the baseline. Use an up-to-date checkout for this first run.
 
-Commits shared by selected refs appear once per repository. Commits outside default-branch
-history display labels for every selected topic branch that reaches them. Labels disappear
-when the commit becomes reachable from the default branch. GitHub imports remain independent.
-As with other CLI imports, rendered pages update through cache expiry (historical pages can
-remain cached for seven days) or the existing admin cache-purge endpoint.
-
-## Administration and VOD ownership
-
-In `astro dev`, administration is available locally and edits are attributed to `local-dev`. This is
-a compile-time development bypass. Keep the dev server on loopback; it can write to whichever
-database `.dev.vars` selects and, when configured, modify VOD events.
-
-Production builds require a validated Cloudflare Access JWT, including issuer, audience, expiry,
-subject, and email. Configure one Access application covering `/admin`, `/admin/*`, `/api/admin`,
-and `/api/admin/*`, and set its team domain and audience in `wrangler.jsonc`. An absent
-configuration denies access. Mutation requests must carry same-origin JSON, and stale
-updates/deletes return 409.
-
-VOD is the source of truth for events, including their visibility, tags, camera scope, and recording
-retention protection. Public day pages read events from VOD's `/api/events`. The Days `/admin/`
-workspace sends event changes through `/api/admin/events`, which uses `VOD_ADMIN_API_TOKEN` to call
-VOD's `/api/admin/events` API. Set that secret locally in `.dev.vars` and in production as a Worker
-secret. Events marked for protection prevent their associated recordings from being pruned by VOD.
-
-If the admin banner reports that VOD is blocked by Cloudflare Access, check the Access application
-covering **VOD's** `/api/admin` and `/api/admin/*` routes. Legacy VOD Access rules can redirect these
-server-to-server requests to an HTML login page before VOD can validate `VOD_ADMIN_API_TOKEN`.
-VOD's bearer-token API must be reachable for editing to work. Days' own production admin routes
-still require Access as described above.
+Commits outside default-branch history display labels for every selected topic branch that reaches
+them. Labels disappear when the commit becomes reachable from the default branch.
 
 ## Checks
 
@@ -272,43 +207,13 @@ bun run build
 bun run test:browser            # local database + dev server + VOD admin API access required
 ```
 
-Unit/integration tests cover DST, midnight boundaries, explicit YouTube dates, private repository
-exclusion, overlap coverage, private/public notes, and concurrent edits. Browser smoke tests
-exercise a real VOD day, click-to-load players, mobile layout, invalid dates, same-origin
-enforcement, and the full note lifecycle. They create, publish, and delete a temporary event in
-the configured VOD backend (`VOD_BASE_URL`, default `https://vod.ohn.sh`). Set
-`VOD_ADMIN_API_TOKEN` in `.dev.vars` and restart the dev server before running the test.
-The VOD admin API must accept that token without a Cloudflare Access redirect. Install
-Chromium with `bunx playwright install chromium` if needed. Screenshots are written beneath
-`.data/screenshots/`.
-
 For production-runtime checks, `bun run preview --port 4322` serves the built Worker locally. Public
 pages should load and unauthenticated admin routes should return 403 even on localhost.
 
-## Separate Cloudflare deployment
-
-The prototype is configured as Worker `days-next`; no production domain is attached. Create a
-dedicated Days Turso database, migrate and seed it using the scripts above with that database's
-connection, then configure the Worker secrets `DAYS_DATABASE_URL` and `DAYS_AUTH_TOKEN`. Local
-`.dev.vars` is not uploaded by the build. Configure Access before using the deployed admin
-workspace.
-
-```sh
-bun run check
-bun run deploy
-```
-
-Deployment uses the standard Astro Cloudflare Worker output. Sessions are disabled and images use
-compile-time processing; no session KV or Images binding is required. The compatibility date is
-October 19, 2026, the newest date supported by the adapter's installed workerd binary. This checkout
-has only been run locally; no remote database or Worker has been provisioned or deployed.
 # Social images
 
-Days uses the sibling `../og-snap` package for capture publication and metadata
-helpers. Run `bun link` in that checkout once, then `bun install` in Days. The
-linked package picks up client edits directly, without pulling Browser Run's
-development tooling into Days. Deploy og-snap (including
-colon-key support) and Days before running captures against `https://days.ohn.sh`.
+Days uses  `og-snap` for capture publication and metadata helpers. The linked package picks up
+client edits directly, without pulling Browser Run's development tooling into Days.
 
 ```sh
 bun run social:capture --day 2026-11-12
@@ -327,12 +232,6 @@ The existing admin endpoint still verifies JWT identity and same-origin JSON.
 Tokens remain local to the CLI; preview routes are public and only select public
 content. Never commit credentials or request journals.
 
-Day captures publish to `dates/YYYY-MM-DD`. Item captures publish to
-`items/<SourceItem.id>`; camera captures publish to `dates/YYYY-MM-DD/cameras/<id>`.
-`--for-day` publishes the selected poster to the day key instead, and must match
-the selected content's day. Item/camera keys alone do not change day metadata or
-create item pages. An optional `--alt` overrides generated image alt text.
-
 Preview the composition at `/social/preview?day=2026-11-12`,
 `/social/preview?id=youtube%3AVIDEO_ID`, or
 `/social/preview?day=2026-11-12&camera=quad`. These are fixed 1200×630 poster-only
@@ -340,9 +239,6 @@ pages. Grids show one row of up to three posters, VOD first and then YouTube in 
 as DayContent, with an overflow count. VOD defaults and poster-time overrides are
 shared with the normal page. YouTube posters use 16:9 cover frames to crop their
 baked-in letterboxing; VOD posters use contain fitting.
-Missing posters and media outages fail capture; genuinely empty days have a
-date-only composition. `/social/selection.json` resolves CLI selections against
-deployed data. Captures reflect data at preview time, not a frozen database snapshot.
 
 Requests are journaled in ignored `.og-snap/` before submission. After an uncertain
 outcome, inspect the journal before starting a new capture:
@@ -351,11 +247,3 @@ outcome, inspect the journal before starting a new capture:
 bun run social:capture --status .og-snap/REQUEST.json
 bun run social:capture --purge-day 2026-11-12
 ```
-
-Publication uses revision-checked replacement. A successful image publication is
-reported even when cache purging fails; the command exits nonzero and prints the
-purge-only retry command. After recovering a completed request, purge its affected
-day if necessary. Day pages and the feed read public manifests and emit immutable
-image URLs through Layout props. Transient manifest errors disable HTML caching;
-missing captures retain text metadata. Social platforms may independently cache
-previously scraped cards even after Days' HTML cache is purged.
