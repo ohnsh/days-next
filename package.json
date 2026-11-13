@@ -22,7 +22,6 @@
     "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
-    "og-snap": "link:og-snap",
     "@astrojs/cloudflare": "^14.4.7",
     "@astrojs/mdx": "^8.1.5",
     "@astrojs/react": "^7.1.8",
@@ -31,10 +30,11 @@
     "@srcery-colors/srcery-palette": "^2.1.0",
     "astro": "^7.4.11",
     "jose": "^6.2.17",
+    "og-snap": "link:og-snap",
     "react": "^19.3.1",
     "react-day-picker": "^10.0.2",
     "react-dom": "^19.3.1",
-    "vod-player-astro": "file:../vod/packages/player-astro",
+    "vod-player-astro": "link:vod-player-astro",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
