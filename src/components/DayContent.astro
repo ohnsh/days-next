@@ -143,16 +143,11 @@ const count = posts.length + day.events.length + cameras.length + day.items.leng
         <span class="section-dot red"></span>On YouTube{' '}
         <span class="section-meta">{videos.length} videos</span>
       </h3>
-      {orderedVideoCategories.map(([category, items]) => (
-        <div class="video-category">
-          {!category && <h4>Other videos</h4>}
-          <div class="media-grid">
-            {items.map((item) => (
-              <YouTube {item} />
-            ))}
-          </div>
-        </div>
-      ))}
+      <div class="media-grid">
+        {orderedVideoCategories.map(([, items]) =>
+          items.map((item) => <YouTube {item} />)
+        )}
+      </div>
     </section>
   )}
   {commits.length > 0 && (
