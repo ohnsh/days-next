@@ -15,6 +15,7 @@ validatePosterOverrides(
 
 export default defineConfig({
   output: 'server',
+  site: 'https://days.ohn.sh',
   adapter: cloudflare({ imageService: 'compile' }),
   integrations: [mdx(), react()],
   cache: {

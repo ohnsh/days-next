@@ -1,7 +1,10 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "days-next",
-  "routes": [{ "pattern": "days-next.ohn.sh", "custom_domain": true }],
+  "routes": [
+    { "pattern": "days.ohn.sh", "custom_domain": true },
+    { "pattern": "days-next.ohn.sh", "custom_domain": true },
+  ],
   "workers_dev": false,
   "preview_urls": true,
   // Latest date supported by the adapter's installed workerd binary.
