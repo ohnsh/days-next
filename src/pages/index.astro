@@ -2,6 +2,7 @@
 import { getLiveCollection } from 'astro:content'
 import Layout from '../layouts/Layout.astro'
 import DayContent from '../components/DayContent.astro'
+import { daySocialMetadata } from '../server/social'
 import { dayCachePolicy, plainDay, shiftDay, today } from '../lib/dates'
 let before = Astro.url.searchParams.get('before') || shiftDay(today(), 1)
 try {
@@ -14,7 +15,13 @@ if (error) {
   console.error(JSON.stringify({ event: 'feed-error', message: error.message }))
   Astro.response.status = 503
 }
-const cacheable = !error && !!entries && !entries.some((e) => e.data.warnings.length)
+const { social, failed: socialFailed } = await daySocialMetadata(
+  entries?.[0]?.id || shiftDay(before, -1),
+  Astro.url.searchParams.has('before') ? `/?before=${before}` : '/'
+)
+social.title = 'Latest · Days'
+const cacheable =
+  !error && !!entries && !entries.some((e) => e.data.warnings.length) && !socialFailed
 Astro.response.headers.set(
   'Cache-Control',
   cacheable ? 'public, max-age=0, must-revalidate' : 'no-store'
@@ -32,7 +39,7 @@ if (Astro.cache.enabled) {
 const older = entries?.at(-1)?.id
 ---
 
-<Layout activeDay={entries?.[0]?.id || shiftDay(before, -1)}>
+<Layout activeDay={entries?.[0]?.id || shiftDay(before, -1)} social={social}>
   <section class="intro">
     <h1>Latest</h1>
   </section>

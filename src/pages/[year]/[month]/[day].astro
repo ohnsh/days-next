@@ -2,6 +2,7 @@
 import { getLiveEntry } from 'astro:content'
 import Layout from '../../../layouts/Layout.astro'
 import DayContent from '../../../components/DayContent.astro'
+import { daySocialMetadata } from '../../../server/social'
 import { dayCachePolicy, dayTitle, dayUrl, plainDay, shiftDay } from '../../../lib/dates'
 const key = `${Astro.params.year}-${Astro.params.month}-${Astro.params.day}`
 try {
@@ -14,7 +15,8 @@ if (error) {
   console.error(JSON.stringify({ event: 'day-error', day: key, message: error.message }))
   Astro.response.status = 503
 }
-const cacheable = !error && !!entry && !entry.data.warnings.length
+const { social, failed: socialFailed } = await daySocialMetadata(key)
+const cacheable = !error && !!entry && !entry.data.warnings.length && !socialFailed
 Astro.response.headers.set(
   'Cache-Control',
   cacheable ? 'public, max-age=0, must-revalidate' : 'no-store'
@@ -26,7 +28,7 @@ if (Astro.cache.enabled) {
 }
 ---
 
-<Layout title={dayTitle(key)} activeDay={key}>
+<Layout title={dayTitle(key)} activeDay={key} social={social}>
   {error ? (
     <p class="notice">This day is temporarily unavailable.</p>
   ) : (

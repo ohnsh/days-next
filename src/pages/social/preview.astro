@@ -1,0 +1,41 @@
+---
+import '../../styles/global.css'
+import SocialPreview from '../../components/SocialPreview.astro'
+import { parseSocialSelection } from '../../lib/social'
+import { resolveSocialSelection, SocialSelectionError } from '../../server/social'
+Astro.cache.set(false)
+Astro.response.headers.set('Cache-Control', 'no-store')
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+let selection
+try {
+  let input
+  try {
+    input = parseSocialSelection(Astro.url.searchParams)
+  } catch (error) {
+    throw new SocialSelectionError(String(error))
+  }
+  selection = await resolveSocialSelection(input)
+} catch (error) {
+  Astro.response.status = error instanceof SocialSelectionError ? error.status : 503
+  console.warn(JSON.stringify({ event: 'social-preview-error', message: String(error) }))
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1200" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Days social preview</title>
+  </head>
+  <body>
+    {selection ? (
+      <SocialPreview {selection} />
+    ) : (
+      <div id="social-preview" data-preview-state="error">
+        Preview unavailable.
+      </div>
+    )}
+  </body>
+</html>

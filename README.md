@@ -302,3 +302,59 @@ Deployment uses the standard Astro Cloudflare Worker output. Sessions are disabl
 compile-time processing; no session KV or Images binding is required. The compatibility date is
 October 19, 2026, the newest date supported by the adapter's installed workerd binary. This checkout
 has only been run locally; no remote database or Worker has been provisioned or deployed.
+# Social images
+
+Days uses the sibling `../og-snap` package for capture publication and metadata
+helpers. Run `bun link` in that checkout once, then `bun install` in Days. The
+linked package picks up client edits directly, without pulling Browser Run's
+development tooling into Days. Deploy og-snap (including
+colon-key support) and Days before running captures against `https://days.ohn.sh`.
+
+```sh
+bun run social:capture --day 2026-11-12
+bun run social:capture --day 2026-11-12 --section youtube
+bun run social:capture --day 2026-11-12 --section vod --all-cameras
+bun run social:capture --id 'youtube:VIDEO_ID'
+bun run social:capture --day 2026-11-12 --camera quad
+bun run social:capture --day 2026-11-12 --camera quad --for-day 2026-11-12
+bun run social:capture --id 'youtube:VIDEO_ID' --for-day 2026-11-12
+```
+
+Set `OG_SNAP_TOKEN` to the Days consumer token. Set `DAYS_ACCESS_JWT` to a current
+Cloudflare Access **user** JWT for Days to invalidate cached HTML after publishing
+a day image (for example, obtain it with `cloudflared access token --app=https://days.ohn.sh`).
+The existing admin endpoint still verifies JWT identity and same-origin JSON.
+Tokens remain local to the CLI; preview routes are public and only select public
+content. Never commit credentials or request journals.
+
+Day captures publish to `dates/YYYY-MM-DD`. Item captures publish to
+`items/<SourceItem.id>`; camera captures publish to `dates/YYYY-MM-DD/cameras/<id>`.
+`--for-day` publishes the selected poster to the day key instead, and must match
+the selected content's day. Item/camera keys alone do not change day metadata or
+create item pages. An optional `--alt` overrides generated image alt text.
+
+Preview the composition at `/social/preview?day=2026-11-12`,
+`/social/preview?id=youtube%3AVIDEO_ID`, or
+`/social/preview?day=2026-11-12&camera=quad`. These are fixed 1200×630 poster-only
+pages. Grids show up to six posters, VOD first and then YouTube in the same order
+as DayContent, with an overflow count. VOD defaults and poster-time overrides are
+shared with the normal page. Single posters are contained without cropping.
+Missing posters and media outages fail capture; genuinely empty days have a
+date-only composition. `/social/selection.json` resolves CLI selections against
+deployed data. Captures reflect data at preview time, not a frozen database snapshot.
+
+Requests are journaled in ignored `.og-snap/` before submission. After an uncertain
+outcome, inspect the journal before starting a new capture:
+
+```sh
+bun run social:capture --status .og-snap/REQUEST.json
+bun run social:capture --purge-day 2026-11-12
+```
+
+Publication uses revision-checked replacement. A successful image publication is
+reported even when cache purging fails; the command exits nonzero and prints the
+purge-only retry command. After recovering a completed request, purge its affected
+day if necessary. Day pages and the feed read public manifests and emit immutable
+image URLs through Layout props. Transient manifest errors disable HTML caching;
+missing captures retain text metadata. Social platforms may independently cache
+previously scraped cards even after Days' HTML cache is purged.

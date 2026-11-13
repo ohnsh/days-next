@@ -6,6 +6,7 @@ import { dayTitle, dayUrl } from '../lib/dates'
 import { getPostsForDay } from '../lib/posts'
 import type { Day, SourceItem } from '../lib/types'
 import { isDefaultView } from '../lib/vod-view'
+import { orderedVideos } from '../lib/day-media'
 interface Props {
   day: Day
   expanded?: boolean
@@ -15,27 +16,11 @@ const cameras = day.cameras
 const hasDefaultCameras = cameras.some((camera) => isDefaultView(camera.id))
 const posts = await getPostsForDay(day.day)
 const commits = day.items.filter((i) => i.source === 'github' || i.source === 'git')
-const videos = day.items.filter((i) => i.source === 'youtube')
+const videos = orderedVideos(day.items)
 const repos = new Map<string, SourceItem[]>()
 for (const item of commits) {
   const group = `${item.group} (${item.source === 'github' ? 'GitHub' : 'Git'})`
   repos.set(group, [...(repos.get(group) ?? []), item])
-}
-const videoCategoryOrder = ['🎙️', '🤳', '🐶', '🏃‍♂️', '🎣', '🚗']
-const videoCategories = new Map<string, SourceItem[]>()
-for (const video of videos) {
-  const category = video.tags[0] ?? ''
-  videoCategories.set(category, [...(videoCategories.get(category) ?? []), video])
-}
-const orderedVideoCategories = [...videoCategories.entries()].sort(([a], [b]) => {
-  const aIndex = videoCategoryOrder.indexOf(a)
-  const bIndex = videoCategoryOrder.indexOf(b)
-  const aRank = aIndex === -1 ? videoCategoryOrder.length : aIndex
-  const bRank = bIndex === -1 ? videoCategoryOrder.length : bIndex
-  return aRank - bRank || a.localeCompare(b)
-})
-for (const [, items] of orderedVideoCategories) {
-  items.sort((a, b) => a.title.localeCompare(b.title))
 }
 const count = posts.length + day.events.length + cameras.length + day.items.length
 /*const summary = [
@@ -144,9 +129,9 @@ const count = posts.length + day.events.length + cameras.length + day.items.leng
         <span class="section-meta">{videos.length} videos</span>
       </h3>
       <div class="media-grid">
-        {orderedVideoCategories.map(([, items]) =>
-          items.map((item) => <YouTube {item} />)
-        )}
+        {videos.map((item) => (
+          <YouTube {item} />
+        ))}
       </div>
     </section>
   )}

@@ -2,11 +2,13 @@
 import '../styles/global.css'
 import { dayUrl, shiftDay, today } from '../lib/dates'
 import CalendarPicker from '../components/CalendarPicker'
+import { socialMeta, type SocialMetadata } from 'og-snap/meta'
 interface Props {
   title?: string
   activeDay?: string
+  social?: SocialMetadata
 }
-const { title = 'Latest', activeDay = today() } = Astro.props
+const { title = 'Latest', activeDay = today(), social } = Astro.props
 const currentToday = today()
 ---
 
@@ -15,7 +17,9 @@ const currentToday = today()
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Days — an archive." />
+    <meta name="description" content={social?.description ?? 'Days — an archive.'} />
+    {social && <link rel="canonical" href={social.url} />}
+    {social && socialMeta(social).map((tag) => <meta {...tag} />)}
     <title>{title} · Days</title>
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" type="image/png" />

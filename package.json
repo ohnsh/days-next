@@ -18,9 +18,11 @@
     "sync": "bun run scripts/sync.ts",
     "sync:git": "bun run scripts/sync-git.ts",
     "sync:full": "bun run scripts/sync.ts --full",
+    "social:capture": "bun run scripts/capture-social.ts",
     "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
+    "og-snap": "link:og-snap",
     "@astrojs/cloudflare": "^14.4.7",
     "@astrojs/mdx": "^8.1.5",
     "@astrojs/react": "^7.1.8",

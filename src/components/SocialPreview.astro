@@ -1,0 +1,148 @@
+---
+import { dayTitle } from '../lib/dates'
+import type { resolveSocialSelection } from '../server/social'
+interface Props {
+  selection: Awaited<ReturnType<typeof resolveSocialSelection>>
+}
+const { selection } = Astro.props
+const { posters, single, total, day } = selection
+---
+
+<div id="social-preview" data-preview-state="loading" class:list={[{ single }]}>
+  {!single && (
+    <header>
+      <strong>days.</strong>
+      <span>{dayTitle(day)}</span>
+    </header>
+  )}
+  <div class="poster-grid" data-count={posters.length}>
+    {posters.map((poster) => (
+      <figure>
+        <img src={poster.url} alt={poster.title} loading="eager" />
+        {!single && (
+          <figcaption>
+            <span>{poster.group}</span> {poster.title}
+          </figcaption>
+        )}
+      </figure>
+    ))}
+    {!posters.length && <p class="empty-day">An open page.</p>}
+  </div>
+  {!single && (
+    <footer>
+      <span>John Sherrell · days.ohn.sh</span>
+      <span>{total > posters.length ? `+${total - posters.length} more` : ''}</span>
+    </footer>
+  )}
+</div>
+<style>
+  #social-preview {
+    width: 1200px;
+    height: 630px;
+    padding: 28px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  header,
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: none;
+  }
+  header {
+    font-size: 25px;
+  }
+  header strong {
+    font-size: 38px;
+    color: var(--accent);
+  }
+  footer {
+    font-size: 16px;
+    color: var(--muted);
+  }
+  .poster-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+  }
+  .poster-grid[data-count='1'] {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+  .poster-grid[data-count='2'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: 1fr;
+  }
+  .poster-grid[data-count='3'] {
+    grid-template-rows: 1fr;
+  }
+  .poster-grid[data-count='4'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  figure {
+    margin: 0;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  img {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    object-fit: contain;
+    background: var(--panel);
+    border-radius: 5px;
+  }
+  figcaption {
+    flex: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 17px;
+  }
+  figcaption span {
+    color: var(--muted);
+    font-size: 13px;
+    margin-right: 5px;
+  }
+  #social-preview.single {
+    padding: 0;
+  }
+  .single img {
+    border-radius: 0;
+    background: var(--bg);
+  }
+  .empty-day {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    align-self: center;
+    text-align: center;
+    font-size: 44px;
+    color: var(--muted);
+  }
+</style>
+<script>
+  const root = document.querySelector<HTMLElement>('#social-preview')!
+  async function ready() {
+    try {
+      await Promise.all([...root.querySelectorAll('img')].map((image) => image.decode()))
+      await document.fonts.ready
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+      root.dataset.previewState = 'ready'
+    } catch {
+      root.dataset.previewState = 'error'
+    }
+  }
+  void ready()
+</script>

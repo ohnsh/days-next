@@ -147,7 +147,10 @@ async function defaultRef(repo: GitRepository, path: string): Promise<string> {
   throw new Error(`${repo.id}: cannot determine default branch; set defaultBranch`)
 }
 
-export function expandPath(path: string, env: NodeJS.ProcessEnv = process.env) {
+export function expandPath(
+  path: string,
+  env: Record<string, string | undefined> = process.env
+) {
   return path.replace(
     /\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g,
     (_, braced, bare) => {

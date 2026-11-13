@@ -12,3 +12,4 @@ dist/
 worker-configuration.d.ts
 .worktrees/
 .DS_Store
+.og-snap/

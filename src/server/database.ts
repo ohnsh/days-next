@@ -14,6 +14,15 @@ export async function readItems(db: Client, first: string, last: string) {
     throw new Error('Too many source items; narrow the date range')
   return result.rows.map((row) => JSON.parse(String(row.payload)) as SourceItem)
 }
+export async function readItem(db: Client, id: string) {
+  const result = await db.execute({
+    sql: 'SELECT payload FROM source_items WHERE id=? AND is_public=1 LIMIT 1',
+    args: [id],
+  })
+  return result.rows[0]
+    ? (JSON.parse(String(result.rows[0].payload)) as SourceItem)
+    : null
+}
 export async function readYoutubeItems(db: Client, day: string) {
   const result = await db.execute({
     sql: "SELECT payload FROM source_items WHERE day=? AND source='youtube' AND is_public=1 ORDER BY id LIMIT 5001",
