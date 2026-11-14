@@ -529,7 +529,7 @@ days-youtube iframe {
 
 .repo-list li {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: 6em minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 16px;
   font-size: 0.8rem;
