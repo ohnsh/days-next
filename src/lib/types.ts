@@ -5,6 +5,7 @@ export interface SourceItem {
   title: string
   url?: string
   description: string
+  /** Source timestamp with timezone: commit author date or video publication time. */
   occurredAt: string
   group: string
   tags: string[]

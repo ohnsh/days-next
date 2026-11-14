@@ -2,7 +2,7 @@
 import VodPlayer from 'vod-player-astro'
 import YouTube from './YouTube.astro'
 import Post from './Post.astro'
-import { dayTitle, dayUrl } from '../lib/dates'
+import { dayTitle, dayUrl, TIMEZONE } from '../lib/dates'
 import { getPostsForDay } from '../lib/posts'
 import type { Day, SourceItem } from '../lib/types'
 import { isDefaultView } from '../lib/vod-view'
@@ -16,6 +16,12 @@ const cameras = day.cameras
 const hasDefaultCameras = cameras.some((camera) => isDefaultView(camera.id))
 const posts = await getPostsForDay(day.day)
 const commits = day.items.filter((i) => i.source === 'github' || i.source === 'git')
+const commitTime = new Intl.DateTimeFormat('en-US', {
+  timeZone: TIMEZONE,
+  hour: 'numeric',
+  minute: '2-digit',
+  second: '2-digit',
+})
 const videos = orderedVideos(day.items)
 const repos = new Map<string, SourceItem[]>()
 for (const item of commits) {
@@ -150,20 +156,28 @@ const count = posts.length + day.events.length + cameras.length + day.items.leng
             </summary>
             <ul>
               {items
-                .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+                .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
                 .map((item) => (
                   <li>
-                    {item.url ? (
-                      <a href={item.url}>{item.title}</a>
-                    ) : (
-                      <span>{item.title}</span>
-                    )}
+                    <time
+                      datetime={item.occurredAt}
+                      title={`Authored ${item.occurredAt}`}
+                    >
+                      {commitTime.format(new Date(item.occurredAt))}
+                    </time>
+                    <span class="commit-message">
+                      {item.url ? (
+                        <a href={item.url}>{item.title}</a>
+                      ) : (
+                        <span>{item.title}</span>
+                      )}
+                      {item.branches?.map((branch) => (
+                        <span class="pill" title="Not reachable from the default branch">
+                          {branch}
+                        </span>
+                      ))}
+                    </span>
                     <code>{item.id.split(':').at(-1)?.slice(0, 7)}</code>
-                    {item.branches?.map((branch) => (
-                      <span class="pill" title="Not reachable from the default branch">
-                        {branch}
-                      </span>
-                    ))}
                   </li>
                 ))}
             </ul>
