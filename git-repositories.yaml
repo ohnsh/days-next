@@ -8,3 +8,19 @@
   path: ${REPOS_ROOT}/vod
   defaultBranch: main
   # refs: [main]
+
+- id: days
+  path: ${REPOS_ROOT}/days
+  defaultBranch: main
+
+- id: og-snap
+  path: ${REPOS_ROOT}/og-snap
+  defaultBranch: main
+
+- id: daycap
+  path: ${REPOS_ROOT}/daycap
+  defaultBranch: main
+
+- id: did
+  path: ${REPOS_ROOT}/did
+  defaultBranch: main
