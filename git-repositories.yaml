@@ -24,3 +24,7 @@
 - id: did
   path: ${REPOS_ROOT}/did
   defaultBranch: main
+
+- id: autoredact
+  path: ${REPOS_ROOT}/autoredact
+  defaultBranch: main
