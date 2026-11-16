@@ -11,8 +11,10 @@
   # refs: [main]
 
 - id: days
+  github: ohnsh/days
   path: ${REPOS_ROOT}/days
   defaultBranch: main
+  commitUrl: https://github.com/ohnsh/days/commit/{sha}
 
 - id: og-snap
   path: ${REPOS_ROOT}/og-snap
