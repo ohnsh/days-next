@@ -21,10 +21,6 @@
   path: ${REPOS_ROOT}/daycap
   defaultBranch: main
 
-- id: did
-  path: ${REPOS_ROOT}/did
-  defaultBranch: main
-
-- id: autoredact
-  path: ${REPOS_ROOT}/autoredact
+- id: vandelay
+  path: ${REPOS_ROOT}/vandelay
   defaultBranch: main
