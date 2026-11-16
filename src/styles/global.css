@@ -184,6 +184,13 @@ main,
   display: none;
 }
 
+.menu-separator {
+  align-self: stretch;
+  margin: 6px 12px;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
 .wordmark {
   justify-self: start;
   display: inline-flex;
@@ -904,10 +911,6 @@ days-youtube iframe {
 
   .menu-name {
     display: block;
-    padding: 10px 12px;
-    margin-bottom: 4px;
-    border-bottom: 1px solid var(--line);
-    color: var(--muted);
   }
 }
 
