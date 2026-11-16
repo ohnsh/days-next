@@ -231,7 +231,9 @@ main,
   gap: 0.6rem;
 }
 
-.menu-source svg {
+.menu-source svg,
+.menu-source img,
+.menu-icon-spacer {
   width: 18px;
   height: 18px;
   flex: none;
