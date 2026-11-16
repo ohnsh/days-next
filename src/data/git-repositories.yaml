@@ -27,3 +27,8 @@
 - id: vandelay
   path: ${REPOS_ROOT}/vandelay
   defaultBranch: main
+
+- id: itsa-me
+  github: ohnsh/itsa-me
+  path: ${REPOS_ROOT}/itsa-me
+  defaultBranch: main
