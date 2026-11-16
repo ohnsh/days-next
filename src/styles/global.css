@@ -140,6 +140,10 @@ main,
   gap: 12px;
   font-size: 0.85rem;
   white-space: nowrap;
+
+  .header-name a {
+    text-decoration: none;
+  }
 }
 
 .header-menu {
@@ -219,6 +223,19 @@ main,
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.header-menu nav a.menu-source {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.menu-source svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  overflow: hidden;
 }
 
 .cal-picker {
