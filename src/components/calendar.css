@@ -94,7 +94,7 @@
 }
 
 .cal-dot-vod {
-  background: var(--srcery-palette-bright-blue);
+  background: var(--vod-accent);
 }
 
 .cal-legend {

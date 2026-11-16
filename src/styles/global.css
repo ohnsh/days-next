@@ -9,6 +9,10 @@
   --text: var(--srcery-palette-bright-white);
   --muted: var(--srcery-palette-white);
   --accent: hsl(from var(--srcery-palette-yellow) h s calc(1.2 * l));
+  /* VOD brand accent from ../vod/packages/ui/src/styles/brand.css.
+     public/vod-icon.svg is derived from ../vod/packages/web/public/favicon.svg
+     with its background removed for transparency. */
+  --vod-accent: #f2cb55;
   --font-sans: 'DM Sans', system-ui, sans-serif;
   font-family: var(--font-sans);
   color: var(--text);
@@ -341,7 +345,7 @@ main,
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 0.84rem;
+  font-size: 1rem;
   font-weight: 500;
   margin-bottom: 16px;
 }
@@ -359,7 +363,7 @@ main,
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--srcery-palette-bright-blue);
+  background: var(--vod-accent);
 }
 
 .section-dot.red {

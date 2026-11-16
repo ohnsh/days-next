@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">VOD — VHS sleeve stripes</title>
+  <defs><clipPath id="icon-bounds"><path d="M0 0h512v512H0z"/></clipPath></defs>
+  <g id="icon" clip-path="url(#icon-bounds)">
+    <g transform="translate(54.3 -70.25) scale(.7 1.875)">
+      <path fill="#f2cb55" d="M42 0h65C151 67 174 92 215 92H800v44H215C137 136 101 84 42 0Z"/>
+      <path fill="#e98439" d="M0 0h42C101 84 137 136 215 136H800v40H215C117 176 59 111 0 24Z"/>
+      <path fill="#dc553b" d="M0 24C59 111 117 176 215 176H800v40H215C115 216 44 160 0 90Z"/>
+      <path fill="#a3425b" d="M0 90C44 160 115 216 215 216H800v40H215C119 256 45 213 0 157Z"/>
+    </g>
+  </g>
+</svg>
