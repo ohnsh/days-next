@@ -13,7 +13,7 @@ interface Props {
 }
 const { day, expanded = false } = Astro.props
 const cameras = day.cameras
-const hasDefaultCameras = cameras.some((camera) => isDefaultView(camera.id))
+const hasDefaultCameras = cameras.some((camera) => isDefaultView(camera.id, day.day))
 const posts = await getPostsForDay(day.day)
 const commits = day.items.filter((i) => i.source === 'github' || i.source === 'git')
 const commitTime = new Intl.DateTimeFormat('en-US', {
@@ -106,8 +106,8 @@ const count = posts.length + day.events.length + cameras.length + day.items.leng
         {cameras.map((camera) => (
           <article
             class="camera-card"
-            data-vod-default={String(isDefaultView(camera.id))}
-            hidden={!isDefaultView(camera.id)}
+            data-vod-default={String(isDefaultView(camera.id, day.day))}
+            hidden={!isDefaultView(camera.id, day.day)}
           >
             <VodPlayer
               poster={camera.poster || '/poster-placeholder.svg'}

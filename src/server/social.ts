@@ -65,7 +65,7 @@ export async function resolveSocialSelection(
           .filter((camera) =>
             selection.camera
               ? camera.id === selection.camera
-              : selection.allCameras || isDefaultView(camera.id)
+              : selection.allCameras || isDefaultView(camera.id, day)
           )
           .map((camera) => ({
             id: camera.id,

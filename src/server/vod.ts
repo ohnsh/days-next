@@ -124,7 +124,7 @@ export async function vodCalendar(base: string, month: string) {
     for (const [day, available] of Object.entries(calendar.days)) {
       if (available) {
         allDays[day] = true
-        if (isDefaultView(list[index].id)) days[day] = true
+        if (isDefaultView(list[index].id, day)) days[day] = true
       }
     }
   }
