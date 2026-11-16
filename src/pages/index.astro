@@ -4,7 +4,8 @@ import Layout from '../layouts/Layout.astro'
 import DayContent from '../components/DayContent.astro'
 import { daySocialMetadata } from '../server/social'
 import { dayCachePolicy, plainDay, shiftDay, today } from '../lib/dates'
-let before = Astro.url.searchParams.get('before') || shiftDay(today(), 1)
+const latestBefore = shiftDay(today(), 1)
+let before = Astro.url.searchParams.get('before') || latestBefore
 try {
   plainDay(before)
 } catch {
@@ -37,9 +38,16 @@ if (Astro.cache.enabled) {
   )
 }
 const older = entries?.at(-1)?.id
+const newerBefore = shiftDay(before, 7)
+const pagination = {
+  older: older ? `/?before=${older}` : undefined,
+  newer: before < latestBefore
+    ? newerBefore >= latestBefore ? '/' : `/?before=${newerBefore}`
+    : undefined,
+}
 ---
 
-<Layout activeDay={entries?.[0]?.id || shiftDay(before, -1)} social={social}>
+<Layout activeDay={entries?.[0]?.id || shiftDay(before, -1)} social={social} pagination={pagination}>
   <section class="intro">
     <h1>Latest</h1>
   </section>
@@ -54,7 +62,7 @@ const older = entries?.at(-1)?.id
   <nav class="pagination" aria-label="Feed pagination">
     <a href="/">Back to today</a>
     {older && (
-      <a class="button" href={`/?before=${older}`}>
+      <a class="button" href={pagination.older}>
         Earlier days ↓
       </a>
     )}

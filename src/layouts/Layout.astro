@@ -8,9 +8,16 @@ interface Props {
   title?: string
   activeDay?: string
   social?: SocialMetadata
+  pagination?: { older?: string; newer?: string }
 }
-const { title = 'Latest', activeDay = today(), social } = Astro.props
+const { title = 'Latest', activeDay = today(), social, pagination } = Astro.props
 const currentToday = today()
+const previousHref = pagination ? pagination.older : dayUrl(shiftDay(activeDay, -1))
+const nextHref = pagination
+  ? pagination.newer
+  : activeDay < currentToday ? dayUrl(shiftDay(activeDay, 1)) : undefined
+const previousLabel = pagination ? 'Earlier days' : 'Previous day'
+const nextLabel = pagination ? 'Newer days' : 'Next day'
 ---
 
 <!doctype html>
@@ -35,10 +42,11 @@ const currentToday = today()
         </a>
         <days-calendar-nav>
           <a
-            href={dayUrl(shiftDay(activeDay, -1))}
+            href={previousHref}
+            aria-disabled={!previousHref ? 'true' : undefined}
             class="cal-step"
-            aria-label="Previous day"
-            title="Previous day"
+            aria-label={previousLabel}
+            title={previousLabel}
           >
             ←
           </a>
@@ -49,11 +57,11 @@ const currentToday = today()
             admin={Astro.url.pathname.startsWith('/admin/')}
           />
           <a
-            href={activeDay < currentToday ? dayUrl(shiftDay(activeDay, 1)) : undefined}
-            aria-disabled={activeDay >= currentToday ? 'true' : undefined}
+            href={nextHref}
+            aria-disabled={!nextHref ? 'true' : undefined}
             class="cal-step"
-            aria-label="Next day"
-            title="Next day"
+            aria-label={nextLabel}
+            title={nextLabel}
           >
             →
           </a>
