@@ -5,6 +5,12 @@ interface Props {
 }
 const { item } = Astro.props
 const videoId = item.id.replace(/^youtube:/, '')
+// Keep joined emoji, flags, and skin-tone modifiers together.
+const firstGrapheme = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+  .segment(item.title)[Symbol.iterator]().next().value?.segment ?? ''
+const leadingEmoji = /[\p{Extended_Pictographic}\p{Regional_Indicator}\u20E3]/u.test(firstGrapheme)
+  ? firstGrapheme
+  : ''
 ---
 
 <article class="youtube-card">
@@ -23,7 +29,7 @@ const videoId = item.id.replace(/^youtube:/, '')
     </button>
   </days-youtube>
   <h4>
-    <a href={item.url}>{item.title}</a>
+    <a href={item.url}>{leadingEmoji && <span class="title-emoji">{leadingEmoji}</span>}{item.title.slice(leadingEmoji.length)}</a>
   </h4>
   {item.description && (
     <details>
@@ -32,6 +38,11 @@ const videoId = item.id.replace(/^youtube:/, '')
     </details>
   )}
 </article>
+<style>
+  .title-emoji {
+    font-size: 1.3rem;
+  }
+</style>
 <script>
   class DaysYouTube extends HTMLElement {
     connectedCallback() {

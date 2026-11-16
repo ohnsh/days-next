@@ -411,17 +411,17 @@ main,
 
 .media-caption h4 {
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 1rem;
   margin: 0;
 }
 
 .media-caption span {
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.85rem;
 }
 
 .youtube-card h4 {
-  font-size: 0.85rem;
+  font-size: 1rem;
   line-height: 1.5;
   margin: 12px 0 4px;
 }
