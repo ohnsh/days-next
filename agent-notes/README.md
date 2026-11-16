@@ -14,5 +14,5 @@ YouTube, and [VOD](https://vod.ohn.sh). Live at https://days.ohn.sh.
 These notes are agent-maintained context, not necessarily reviewed or endorsed by the
 repository owner. Verify historical observations against current code.
 
-Poster override instructions remain alongside the configuration in
+Git repository schema and poster override instructions remain alongside the configuration in
 [`src/data/README.md`](../src/data/README.md).

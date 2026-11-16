@@ -16,4 +16,4 @@ if (
 )
   throw new Error('Usage: bun run sync:git [manifest.yaml] [--force=repo-id,repo-id|all]')
 const force = scope?.[0] === 'all' ? 'all' : scope
-await syncGit(paths[0] ?? 'git-repositories.yaml', { force })
+await syncGit(paths[0] ?? 'src/data/git-repositories.yaml', { force })

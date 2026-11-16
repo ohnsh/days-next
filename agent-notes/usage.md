@@ -136,11 +136,11 @@ and Shorts classification. Import data is plain text rendered with Astro escapin
 
 ## Git repository prototype
 
-Git imports are a separate source from GitHub, with their own IDs and sync status. The ignored
-`git-repositories.yaml` explicitly opts repositories into the public feed.
+Git imports are a separate source from GitHub, with their own IDs and sync status.
+`src/data/git-repositories.yaml` explicitly opts repositories into the public feed.
 
 ```sh
-bun run sync:git                       # git-repositories.yaml
+bun run sync:git                       # src/data/git-repositories.yaml
 bun run sync:git /path/to/manifest.yaml
 bun run sync:git --force=days-next     # accept changes/removals only for this repository
 bun run sync:git --force=days-next,other-repo
@@ -152,32 +152,8 @@ they do not invoke Git imports. Running both importers for the same history inte
 produces separate Git and GitHub entries. To switch, stop running the GitHub importer;
 its already-imported rows remain until explicitly removed.
 
-Manifest fields:
-
-- `id`: stable repository identity used in `git:<id>:<sha>` IDs and feed grouping.
-- Exactly one of `path` (repository root, relative to the manifest or absolute) and `remote` (a Git transport
-  URL, including `user@host:/path/repo.git` or `ssh://…`). Local paths are read without
-  fetching or modifying the working tree. Remotes are fetched into owned bare caches under
-  `.data/git-repositories/`; SSH uses your normal keys/config and noninteractive authentication.
-  Paths support `$VARIABLE` and `${VARIABLE}` substitutions, e.g. `${REPOS_ROOT}/days-next`.
-  Set `REPOS_ROOT` in the shell or `.dev.vars` on each machine; shell values take precedence.
-  Unset or empty variables abort sync. Expansion applies only to `path`, with no shell execution
-  or shell default-value syntax.
-- `defaultBranch`: optional branch name, such as `main`. Otherwise remote entries discover
-  the remote's symbolic HEAD; local entries use `origin/HEAD` to identify the corresponding
-  local branch, or a bare repository's symbolic HEAD. A working checkout's current branch
-  is not assumed to be its default. If discovery fails, specify this field.
-- `refs`: optional list of branch names or full `refs/heads/…` / `refs/remotes/…` names.
-  Omission selects only the default branch. An explicit list **must include the default
-  branch**, alongside every desired topic branch. Short names mean local branches, including
-  in remote caches. Explicit remote-tracking refs work for local paths; set `defaultBranch`
-  to the matching full remote-tracking ref when using that mode.
-- `commitUrl`: optional HTTP(S) viewer template containing `{sha}`, e.g.
-  `https://github.com/OWNER/REPO/commit/{sha}`. Without it, titles render without links.
-  The importer does not check whether local/unpushed commits exist in the viewer.
-- `authors`: optional `{ "names": [...], "emails": [...] }` exact, case-insensitive OR
-  matches. Omission retains the existing personal GitHub author name/domain rules; empty
-  arrays match nobody. Author dates are mapped to America/Chicago as before.
+The manifest schema and examples are documented alongside the configuration in
+[`src/data/README.md`](../src/data/README.md#git-repositories).
 
 Every run scans the complete history reachable from the selected branch tips and reconciles
 the entire Git source atomically after all repositories succeed. Unchanged rows retain their
