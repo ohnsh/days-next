@@ -25,7 +25,7 @@ const commitTime = new Intl.DateTimeFormat('en-US', {
 const videos = orderedVideos(day.items)
 const repos = new Map<string, SourceItem[]>()
 for (const item of commits) {
-  const group = `${item.group} (${item.source === 'github' ? 'GitHub' : 'Git'})`
+  const group = `${item.group}${item.source === 'github' ? ' (GitHub)' : ''}`
   repos.set(group, [...(repos.get(group) ?? []), item])
 }
 const count = posts.length + day.events.length + cameras.length + day.items.length
