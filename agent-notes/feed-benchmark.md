@@ -1,5 +1,10 @@
 # Seven-day feed benchmark
 
+Date: 2026-11-16. Status: observation.
+Source commit: `c0d5e8923670899908716dedf5eaacdf564cb16e` (seven-day feed and benchmark);
+baseline parent: `83cc9d3`. Evidence: `scripts/benchmark-feed.mjs`, `src/pages/index.astro`,
+and the local raw results listed below.
+
 Measured `/` on November 16, 2026 using
 `bun run dev:prod-vod --host 127.0.0.1 --port 4322`, with the configured Days database and
 production public VOD API. Baseline covered November 14–16; the updated feed covered

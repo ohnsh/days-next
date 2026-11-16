@@ -1,4 +1,9 @@
-# Days
+# Days usage
+
+Last reviewed: 2026-11-16 against `f185527`. Status: observation.
+Evidence: `package.json`, `src/pages/index.astro`, and the implementation paths below.
+These are maintained operating notes; recheck them when commands, integrations, or caching
+behavior change. Local checks do not establish deployed cache behavior.
 
 A day-oriented personal archive, rendered on demand with Astro 7, its Cloudflare adapter, and an
 aggregated `days` live content collection. The application is branded **Days**; `days-next` is the
@@ -26,7 +31,7 @@ their existing public origins.
 
 ## Routes and data flow
 
-- `/`: three calendar days per page, newest first; `?before=YYYY-MM-DD` is an exclusive date cursor.
+- `/`: seven calendar days per page, newest first; `?before=YYYY-MM-DD` is an exclusive date cursor.
   Empty days remain visible and can still have notes added.
 - `/YYYY/MM/DD/`: a permanent day page with previous/next-day navigation.
 - `/posts/...`: individual file-based Markdown/MDX posts from `src/content/posts/`.
@@ -210,9 +215,9 @@ bun run test:browser            # local database + dev server + VOD admin API ac
 For production-runtime checks, `bun run preview --port 4322` serves the built Worker locally. Public
 pages should load and unauthenticated admin routes should return 403 even on localhost.
 
-# Social images
+## Social images
 
-Days uses  `og-snap` for capture publication and metadata helpers. The linked package picks up
+Days uses `og-snap` for capture publication and metadata helpers. The linked package picks up
 client edits directly, without pulling Browser Run's development tooling into Days.
 
 ```sh
