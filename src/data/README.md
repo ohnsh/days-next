@@ -8,6 +8,7 @@ to use another manifest. The YAML document is a list of repository objects:
 
 ```yaml
 - id: days
+  github: ohnsh/days-next
   path: ${REPOS_ROOT}/days-next
   defaultBranch: main
   refs: [main, prototype/git-activity]
@@ -45,6 +46,13 @@ to use another manifest. The YAML document is a list of repository objects:
 - `commitUrl` (optional): HTTP(S) viewer template containing `{sha}`. Without it,
   titles render without links. The importer does not check whether local/unpushed
   commits exist in the viewer.
+- `github` (optional): GitHub `owner/repo` identity replaced by this Git entry,
+  matched case-insensitively against GitHub items' repository groups. Configuring
+  it suppresses that repository's entire GitHub history in feeds, day pages, and
+  individual-item reads, even before the first Git sync. GitHub database rows are
+  retained; removing the mapping restores visibility. No identity is inferred
+  from `id`, `path`, `remote`, or `commitUrl`. Commit and deploy mapping changes;
+  invalid identities fail configuration and Git imports.
 - `authors` (optional): object with optional `names` and `emails` lists of nonempty
   strings, matched exactly and case-insensitively with OR semantics. Omission
   retains the personal GitHub author name/domain rules in `src/lib/sources.ts`;

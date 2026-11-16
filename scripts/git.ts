@@ -7,6 +7,7 @@ import { replaceSource } from './db'
 import { dayFromInstant } from '../src/lib/dates'
 import { isMyCommit } from '../src/lib/sources'
 import type { SourceItem } from '../src/lib/types'
+import { githubReplacements } from '../src/lib/git-repositories'
 
 export interface GitRepository {
   id: string
@@ -15,11 +16,13 @@ export interface GitRepository {
   defaultBranch?: string
   refs?: string[]
   commitUrl?: string
+  github?: string
   authors?: { names?: string[]; emails?: string[] }
 }
 
 export function parseManifest(value: unknown): GitRepository[] {
   if (!Array.isArray(value)) throw new Error('Git manifest must be an array')
+  githubReplacements(value)
   const ids = new Set<string>()
   for (const repo of value) {
     if (

@@ -6,6 +6,13 @@ import react from '@astrojs/react'
 import { readFileSync } from 'node:fs'
 import { parse } from 'yaml'
 import { validatePosterOverrides } from './src/lib/poster-overrides.ts'
+import { githubReplacements } from './src/lib/git-repositories.ts'
+
+githubReplacements(
+  parse(
+    readFileSync(new URL('./src/data/git-repositories.yaml', import.meta.url), 'utf8')
+  )
+)
 
 validatePosterOverrides(
   parse(

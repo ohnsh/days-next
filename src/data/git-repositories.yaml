@@ -1,4 +1,5 @@
 - id: days-next
+  github: ohnsh/days-next
   path: ${REPOS_ROOT}/days-next
   defaultBranch: main
   # refs: [main]

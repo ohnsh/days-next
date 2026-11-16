@@ -149,8 +149,11 @@ bun run sync:git --force=all           # accept changes/removals for every repos
 
 The existing `sync`, `sync github`, and `sync --full` commands retain their existing behavior;
 they do not invoke Git imports. Running both importers for the same history intentionally
-produces separate Git and GitHub entries. To switch, stop running the GitHub importer;
-its already-imported rows remain until explicitly removed.
+produces separate Git and GitHub entries. Set an entry's `github: owner/repo` mapping
+to suppress that repository's GitHub history at read time, including existing rows.
+Mappings take effect on deployment without requiring a Git sync; removing one restores
+visibility. To switch entirely, stop running the GitHub importer; its already-imported
+rows remain until explicitly removed.
 
 The manifest schema and examples are documented alongside the configuration in
 [`src/data/README.md`](../src/data/README.md#git-repositories).
