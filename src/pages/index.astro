@@ -10,7 +10,7 @@ try {
 } catch {
   return new Response('Invalid date cursor', { status: 400 })
 }
-const { entries, error } = await getLiveCollection('days', { before, limit: 3 })
+const { entries, error } = await getLiveCollection('days', { before, limit: 7 })
 if (error) {
   console.error(JSON.stringify({ event: 'feed-error', message: error.message }))
   Astro.response.status = 503

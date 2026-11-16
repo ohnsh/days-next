@@ -41,7 +41,7 @@ try {
   assert.equal(await page.locator('vod-player-astro iframe').count(), 1)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(`${base}/?before=2026-10-20`)
-  assert.equal(await page.locator('.day-card').count(), 3)
+  assert.equal(await page.locator('.day-card').count(), 7)
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     true,
