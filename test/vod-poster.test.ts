@@ -53,17 +53,21 @@ test('explicit times override both automatic modes and fall back to the latest e
   }
 })
 
-test('today advances at Chicago three-hour boundaries and holds between them', () => {
+test('today advances at Chicago two-hour boundaries and holds between them', () => {
   const records = [
     recording('2026-10-20T05:00:00Z', 'midnight'),
+    recording('2026-10-20T07:00:00Z', '2am'),
     recording('2026-10-20T08:00:00Z', '3am'),
     recording('2026-10-20T09:00:00Z', '4am'),
     recording('2026-10-20T11:00:00Z', '6am'),
   ]
   const poster = (now: string) => recordingPoster(records, '2026-10-20', Date.parse(now))
-  expect(poster('2026-10-20T07:59:59Z')).toBe('midnight')
-  expect(poster('2026-10-20T08:00:00Z')).toBe('3am')
-  expect(poster('2026-10-20T10:59:59Z')).toBe('3am')
+  expect(poster('2026-10-20T06:59:59Z')).toBe('midnight')
+  expect(poster('2026-10-20T07:00:00Z')).toBe('2am')
+  expect(poster('2026-10-20T08:00:00Z')).toBe('2am')
+  expect(poster('2026-10-20T08:59:59Z')).toBe('2am')
+  expect(poster('2026-10-20T09:00:00Z')).toBe('4am')
+  expect(poster('2026-10-20T10:59:59Z')).toBe('4am')
   expect(poster('2026-10-20T11:00:00Z')).toBe('6am')
   expect(poster('2026-10-21T11:00:00Z')).toBe('midnight')
 })
@@ -95,18 +99,20 @@ test('past days prefer the first available poster at or after Chicago noon', () 
   expect(recordingPoster([], '2026-10-20', now)).toBeNull()
 })
 
-test('three-hour boundaries follow wall time across daylight saving changes', () => {
-  for (const [day, midnight, three, six] of [
-    ['2026-03-08', '2026-03-08T06:00:00Z', '2026-03-08T08:00:00Z', '2026-03-08T11:00:00Z'],
-    ['2026-11-01', '2026-11-01T05:00:00Z', '2026-11-01T09:00:00Z', '2026-11-01T12:00:00Z'],
+test('two-hour boundaries follow wall time across daylight saving changes', () => {
+  // Spring skips 2am, resolving that boundary to 3am; fall waits through both 1am hours.
+  for (const [day, midnight, firstBoundary, four] of [
+    ['2026-03-08', '2026-03-08T06:00:00Z', '2026-03-08T08:00:00Z', '2026-03-08T09:00:00Z'],
+    ['2026-11-01', '2026-11-01T05:00:00Z', '2026-11-01T08:00:00Z', '2026-11-01T10:00:00Z'],
   ]) {
     const records = [
       recording(midnight, 'midnight'),
-      recording(three, '3am'),
-      recording(six, '6am'),
+      recording(firstBoundary, 'first boundary'),
+      recording(four, '4am'),
     ]
-    expect(recordingPoster(records, day, Date.parse(three) - 1)).toBe('midnight')
-    expect(recordingPoster(records, day, Date.parse(three))).toBe('3am')
-    expect(recordingPoster(records, day, Date.parse(six))).toBe('6am')
+    expect(recordingPoster(records, day, Date.parse(firstBoundary) - 1)).toBe('midnight')
+    expect(recordingPoster(records, day, Date.parse(firstBoundary))).toBe('first boundary')
+    expect(recordingPoster(records, day, Date.parse(four) - 1)).toBe('first boundary')
+    expect(recordingPoster(records, day, Date.parse(four))).toBe('4am')
   }
 })

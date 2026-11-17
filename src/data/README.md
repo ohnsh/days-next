@@ -82,8 +82,9 @@ Edit `poster-overrides.yaml`, then commit and deploy to change a day's camera po
 - Overrides select the first available recording poster at or after the time. If none
   exists, they use the latest earlier poster for that day. They select existing posters,
   not exact video frames, and do not change the playback start position.
-- Remove an override to restore automatic selection: three-hour blocks today, or the first
-  poster at/after noon for previous days.
+- Remove an override to restore automatic selection: two-hour blocks today (midnight, 2am,
+  4am, etc. in America/Chicago), or the first poster at/after noon for previous days.
+  On spring-forward days, the skipped 2am boundary resolves to 3am.
 - Invalid dates, times, or fields fail during Astro configuration (including builds).
 - Existing page caches may delay when a deployed override appears.
 - On daylight-saving transitions, nonexistent times move forward by the gap; repeated

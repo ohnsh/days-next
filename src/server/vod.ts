@@ -71,9 +71,9 @@ export function recordingPoster(
     return posters.find((r) => r.start >= noon)?.posterUrl ?? first
   }
 
-  // Use wall-clock boundaries so DST days still change at 3am, 6am, etc.
+  // Use two-hour wall-clock boundaries; a skipped 2am resolves to 3am on spring-forward days.
   const boundary = localNow.with({
-    hour: Math.floor(localNow.hour / 3) * 3,
+    hour: Math.floor(localNow.hour / 2) * 2,
     minute: 0,
     second: 0,
     millisecond: 0,
