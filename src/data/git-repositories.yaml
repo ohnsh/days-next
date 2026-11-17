@@ -17,6 +17,7 @@
   commitUrl: https://github.com/ohnsh/days/commit/{sha}
 
 - id: og-snap
+  github: ohnsh/og-snap
   path: ${REPOS_ROOT}/og-snap
   defaultBranch: main
 
