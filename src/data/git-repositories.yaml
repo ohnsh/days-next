@@ -20,6 +20,7 @@
   github: ohnsh/og-snap
   path: ${REPOS_ROOT}/og-snap
   defaultBranch: main
+  commitUrl: https://github.com/ohnsh/og-snap/commit/{sha}
 
 - id: daycap
   path: ${REPOS_ROOT}/daycap
@@ -33,3 +34,4 @@
   github: ohnsh/itsa-me
   path: ${REPOS_ROOT}/itsa-me
   defaultBranch: main
+  commitUrl: https://github.com/ohnsh/itsa-me/commit/{sha}
