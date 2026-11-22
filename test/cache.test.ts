@@ -4,15 +4,15 @@ import { dayCachePolicy } from '../src/lib/dates'
 
 test('day cache policy uses short TTLs for recent dates and long TTLs only for historical dates', () => {
   const now = '2026-10-25'
-  expect(dayCachePolicy(now, now)).toEqual({ maxAge: 60, swr: 15 })
-  expect(dayCachePolicy('2026-10-22', now)).toEqual({ maxAge: 60, swr: 15 })
+  expect(dayCachePolicy(now, now)).toEqual({ maxAge: 1200, swr: 15 })
+  expect(dayCachePolicy('2026-10-22', now)).toEqual({ maxAge: 1200, swr: 15 })
   expect(dayCachePolicy('2026-10-17', now)).toEqual({ maxAge: 604800, swr: 86400 })
 })
 
 test('a feed receives long caching only when every represented day is historical', () => {
   const now = '2026-10-25'
   expect(dayCachePolicy(['2026-10-17', '2026-10-22', '2026-10-15'], now)).toEqual({
-    maxAge: 60,
+    maxAge: 1200,
     swr: 15,
   })
   expect(dayCachePolicy(['2026-10-17', '2026-10-15', '2026-10-10'], now)).toEqual({

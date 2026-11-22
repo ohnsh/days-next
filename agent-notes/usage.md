@@ -61,7 +61,7 @@ from empty days: VOD outages display a notice, while database failures return a 
 empty archive.
 
 Successful public pages use Astro's Cloudflare route cache. Recent days (within the last 7 days)
-are cached for 60 seconds, with up to 15 seconds stale-while-revalidate. Historical day pages and
+are cached for 20 minutes, with up to 15 seconds stale-while-revalidate. Historical day pages and
 posts, and feeds containing only historical days, are cached for 7 days with 1 day
 stale-while-revalidate. A feed containing any recent day keeps the short TTL. The adapter enables
 Workers Caching in the generated deployment config; cache hits skip rendering and all its
@@ -81,7 +81,7 @@ Authenticated administrators can request targeted invalidation using
 Astro disables route caching and the purge endpoint returns `purged: false`.
 
 VOD owns query optimization and its discovery API response cache (30 seconds fresh plus 15 seconds
-SWR). The two independent layers can accumulate staleness: allow roughly two minutes under normal
+SWR). The two independent layers can accumulate staleness: allow roughly 21 minutes under normal
 conditions for an unannounced change to appear in Days. The live collection does not cache database
 queries itself, and click-to-load players still make their own VOD requests.
 
